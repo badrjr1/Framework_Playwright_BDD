@@ -10,7 +10,7 @@ public class WebsocketSteps {
 
     private WebSocketClientManager wsClient;
 
-    @Given("connect to websocket {string}")
+    @Given("connect to websocket")
     public void connect_to_websocket(String string) {
         wsClient = new WebSocketClientManager();
         wsClient.connect(string);
