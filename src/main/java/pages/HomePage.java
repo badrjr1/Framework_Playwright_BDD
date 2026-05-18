@@ -3,21 +3,19 @@ package pages;
 import com.microsoft.playwright.Locator;
 import com.microsoft.playwright.Page;
 import config.LocatorReader;
+import core.factory.LocatorFactory;
+import core.heal.actions.ElementActions;
 
 public class HomePage {
 
-    private final Page page;
-
-    private final Locator myAccount;
+    private final ElementActions elementActions;
 
     public HomePage(Page page) {
-        this.page = page;
-
-        this.myAccount = page.locator(LocatorReader.get("btn_my_account"));
+        this.elementActions = new ElementActions(page);
     }
 
     public void clickMyAccount() {
-        myAccount.click();
+        elementActions.click("btn_my_account");
     }
 
 }

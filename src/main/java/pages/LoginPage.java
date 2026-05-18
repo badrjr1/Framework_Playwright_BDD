@@ -1,35 +1,28 @@
 package pages;
 
-import com.microsoft.playwright.Locator;
 import com.microsoft.playwright.Page;
-import com.microsoft.playwright.options.AriaRole;
-import config.LocatorReader;
+import core.heal.actions.ElementActions;
 
 public class LoginPage {
-    private Page page;
 
-    private final Locator emailLocator ;
-    private final Locator passwordLocator ;
-    private final Locator loginBtn ;
-
+    private final ElementActions elementActions;
 
     public LoginPage(Page page) {
-        this.page = page;
-        this.loginBtn = page.locator(LocatorReader.get("btn_login"));
-        this.passwordLocator = page.getByLabel(LocatorReader.get("txt_password"));
-        this.emailLocator = page.getByLabel(LocatorReader.get("txt_email"));
+
+        this.elementActions = new ElementActions(page);
     }
 
     public void entreEmail(String email) {
-        emailLocator.fill(email);
+        elementActions.write("txt_email", email);
+
     }
 
     public void entrePassword(String password) {
-        passwordLocator.fill(password);
+        elementActions.write("txt_password", password);
     }
 
     public void clickLogin() {
-        loginBtn.click();
+        elementActions.click("btn_login");
     }
 
 }

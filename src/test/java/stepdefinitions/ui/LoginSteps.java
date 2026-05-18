@@ -48,6 +48,7 @@ public class LoginSteps {
 
         loginPage.entreEmail(email);
 
+
         logger.info("Email entered successfully in field: txt_email");
     }
 
