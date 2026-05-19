@@ -5,6 +5,7 @@ import core.heal.ai.AiClient;
 import core.heal.ai.AiClientFactory;
 import core.heal.ai.AiPromptBuilder;
 import core.heal.dom.DomExtractor;
+import core.heal.dto.HealingResult;
 import core.heal.locator.LocatorDefinition;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

@@ -1,11 +1,12 @@
 package pages;
 
 import com.microsoft.playwright.Page;
-import core.heal.actions.ElementActions;
+import pages.actions.ElementActions;
+import pages.actions.IElementActions;
 
 public class LoginPage {
 
-    private final ElementActions elementActions;
+    private final IElementActions elementActions;
 
     public LoginPage(Page page) {
 
@@ -23,6 +24,10 @@ public class LoginPage {
 
     public void clickLogin() {
         elementActions.click("btn_login");
+    }
+
+    public void assertUrlLogin(boolean expected) {
+        elementActions.assertUrlContains("lnk_current_url", expected);
     }
 
 }

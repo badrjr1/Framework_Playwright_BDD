@@ -2,6 +2,7 @@ package core.heal.ai.clientsIA;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import config.ConfigReader;
 import core.heal.ai.AiClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -17,7 +18,7 @@ public class OpenAiClient implements AiClient {
 
     private static final Logger logger = LoggerFactory.getLogger(OpenAiClient.class);
 
-    private static final String OPENAI_RESPONSES_URL = "https://api.openai.com/v1/responses";
+    private static final String OPENAI_RESPONSES_URL = ConfigReader.get("OPENAI_RESPONSES_URL");
 
     private final String apiKey;
     private final String model;

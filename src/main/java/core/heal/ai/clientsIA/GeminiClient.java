@@ -2,6 +2,7 @@ package core.heal.ai.clientsIA;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import config.ConfigReader;
 import core.heal.ai.AiClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -17,8 +18,7 @@ public class GeminiClient implements AiClient {
 
     private static final Logger logger = LoggerFactory.getLogger(GeminiClient.class);
 
-    private static final String GEMINI_BASE_URL =
-            "https://generativelanguage.googleapis.com/v1beta/models/%s:generateContent?key=%s";
+    private static final String GEMINI_BASE_URL = ConfigReader.get("GEMINI_BASE_URL");
 
     private final String apiKey;
     private final String model;

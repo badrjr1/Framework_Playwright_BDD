@@ -67,6 +67,18 @@ public class LocatorFactory {
                 logger.debug("[LOCATOR-FACTORY] Using placeholder locator: {}", value);
                 return page.getByPlaceholder(value);
 
+            case "alttext":
+                logger.debug("[LOCATOR-FACTORY] Using alttext locator: {}", value);
+                return page.getByAltText(value);
+
+            case "title":
+                logger.debug("[LOCATOR-FACTORY] Using title locator: {}", value);
+                return page.getByTitle(value);
+
+            case "testid":
+                logger.debug("[LOCATOR-FACTORY] Using testid locator: {}", value);
+                return page.getByTestId(value);
+
             case "role":
                 return createRoleLocator(value, option);
 

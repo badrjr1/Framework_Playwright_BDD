@@ -57,10 +57,10 @@ public class AiPromptBuilder {
                     - Each result must be directly parseable by the framework.
                 
                 Expected output example:
-                css|#input-email
-                css|input[name='email']
-                placeholder|E-Mail Address
-                role|textbox|E-Mail Address
+                    css|#input-email
+                    css|input[name='email']
+                    placeholder|E-Mail Address
+                    role|textbox|E-Mail Address
                 """.formatted(
                 elementName,
                 failedLocatorText,

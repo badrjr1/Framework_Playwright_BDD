@@ -1,10 +1,7 @@
 package pages;
 
-import com.microsoft.playwright.Locator;
 import com.microsoft.playwright.Page;
-import config.LocatorReader;
-import core.factory.LocatorFactory;
-import core.heal.actions.ElementActions;
+import pages.actions.ElementActions;
 
 public class HomePage {
 

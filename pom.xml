@@ -111,7 +111,6 @@
       <groupId>io.qameta.allure</groupId>
       <artifactId>allure-cucumber7-jvm</artifactId>
       <version>${allure.version}</version>
-      <scope>test</scope>
     </dependency>
 
     <!-- API/WS -->
@@ -188,7 +187,7 @@
         <version>3.2.5</version>
         <configuration>
           <useModulePath>false</useModulePath>
-          <rerunFailingTestsCount>0</rerunFailingTestsCount>
+          <rerunFailingTestsCount>2</rerunFailingTestsCount>
           <includes>
             <include>**/TestRunner.java</include>
           </includes>

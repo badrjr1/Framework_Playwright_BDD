@@ -73,33 +73,34 @@ public class LoginSteps {
 
     @Then("assert value of that element lnk_current_url contains {word} is {word}")
     public void assert_that_url_contains_is(String expectedUrlPart, String status) {
-        logger.info("Starting URL assertion");
-        logger.info("Expected URL contains: {}", expectedUrlPart);
-        logger.info("Expected status: {}", status);
-        logger.info("Actual URL: {}", Hooks.getPage().url());
-
-        boolean expectedStatus = Boolean.parseBoolean(status);
-        boolean actualStatus = Hooks.getPage().url().contains(expectedUrlPart);
-
-        logger.info("Actual status: {}", actualStatus);
-
-        if (expectedStatus == actualStatus) {
-            logger.info("URL assertion passed");
-        } else {
-            logger.error(
-                    "URL assertion failed. Expected URL contains '{}' to be {}, but actual URL was: {}",
-                    expectedUrlPart,
-                    expectedStatus,
-                    Hooks.getPage().url()
-            );
-        }
-
-        assertEquals(expectedStatus, actualStatus,
-                "URL assertion failed. Expected URL contains '"
-                        + expectedUrlPart
-                        + "' to be: "
-                        + expectedStatus
-                        + " but actual URL was: "
-                        + Hooks.getPage().url());
+        loginPage.assertUrlLogin( Boolean.parseBoolean(status));
+//        logger.info("Starting URL assertion");
+//        logger.info("Expected URL contains: {}", expectedUrlPart);
+//        logger.info("Expected status: {}", status);
+//        logger.info("Actual URL: {}", Hooks.getPage().url());
+//
+//        boolean expectedStatus = Boolean.parseBoolean(status);
+//        boolean actualStatus = Hooks.getPage().url().contains(expectedUrlPart);
+//
+//        logger.info("Actual status: {}", actualStatus);
+//
+//        if (expectedStatus == actualStatus) {
+//            logger.info("URL assertion passed");
+//        } else {
+//            logger.error(
+//                    "URL assertion failed. Expected URL contains '{}' to be {}, but actual URL was: {}",
+//                    expectedUrlPart,
+//                    expectedStatus,
+//                    Hooks.getPage().url()
+//            );
+//        }
+//
+//        assertEquals(expectedStatus, actualStatus,
+//                "URL assertion failed. Expected URL contains '"
+//                        + expectedUrlPart
+//                        + "' to be: "
+//                        + expectedStatus
+//                        + " but actual URL was: "
+//                        + Hooks.getPage().url());
     }
 }

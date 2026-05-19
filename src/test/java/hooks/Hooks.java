@@ -34,7 +34,7 @@ public class Hooks {
                 Browser browser = playwright.chromium().launch(
                         new BrowserType
                                 .LaunchOptions()
-                                .setHeadless(false)
+                                .setHeadless(true)
                 );
 
                 logger.info("Creating browser context with video recording enabled");

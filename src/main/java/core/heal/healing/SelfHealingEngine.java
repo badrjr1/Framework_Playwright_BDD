@@ -5,6 +5,9 @@ import com.microsoft.playwright.Page;
 
 import config.LocatorReader;
 
+import core.heal.dto.HealingResult;
+import core.heal.dto.HealingStrategyType;
+import core.heal.dto.ResolvedLocator;
 import core.heal.locator.LocatorDefinition;
 import core.heal.locator.LocatorFactory;
 import core.heal.locator.LocatorParser;
@@ -32,8 +35,11 @@ public class SelfHealingEngine {
 
         logger.info("[SELF-HEALING] SelfHealingEngine initialized");
     }
-
     public Locator findLocator(String elementName) {
+        return resolveLocator(elementName).getLocator();
+    }
+
+    public ResolvedLocator resolveLocator(String elementName) {
 
         logger.info("[SELF-HEALING] Start finding locator for element: {}", elementName);
 
@@ -60,7 +66,11 @@ public class SelfHealingEngine {
 
         if (validPrimaryLocator != null) {
             logger.info("[SELF-HEALING] Primary locator OK for element: {}", elementName);
-            return validPrimaryLocator;
+            return new ResolvedLocator(
+                    validPrimaryLocator,
+                    primaryLocator.toStorageFormat(),
+                    HealingStrategyType.PRIMARY
+            );
         }
 
         logger.warn(
@@ -97,7 +107,11 @@ public class SelfHealingEngine {
                         elementName
                 );
 
-                return validFallbackLocator;
+                return new ResolvedLocator(
+                        validFallbackLocator,
+                        fallbackLocator.toStorageFormat(),
+                        HealingStrategyType.FALLBACK
+                );
             }
 
             logger.warn(
@@ -109,7 +123,7 @@ public class SelfHealingEngine {
 
         logger.warn("[SELF-HEALING] All fallback locators KO for element: {}", elementName);
 
-        // 3. Heuristic strategy
+         // 3. Heuristic strategy
         logger.info("[SELF-HEALING] Starting heuristic strategy for element: {}", elementName);
 
         HealingResult heuristicResult = heuristicStrategy.heal(elementName, primaryLocator);
@@ -140,7 +154,11 @@ public class SelfHealingEngine {
                         elementName
                 );
 
-                return validHeuristicLocator;
+                return new ResolvedLocator(
+                        validHeuristicLocator,
+                        heuristicResult.getLocator(),
+                        HealingStrategyType.HEURISTIC
+                );
             }
 
             logger.warn(
@@ -184,7 +202,11 @@ public class SelfHealingEngine {
                                 elementName
                         );
 
-                        return validAiLocator;
+                        return new ResolvedLocator(
+                                validAiLocator,
+                                aiLocator,
+                                HealingStrategyType.AI
+                        );
                     }
 
                     logger.warn(

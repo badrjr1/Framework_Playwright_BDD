@@ -2,6 +2,7 @@ package core.heal.ai.clientsIA;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import config.ConfigReader;
 import core.heal.ai.AiClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -17,8 +18,8 @@ public class ClaudeAiClient implements AiClient {
 
     private static final Logger logger = LoggerFactory.getLogger(ClaudeAiClient.class);
 
-    private static final String CLAUDE_MESSAGES_URL = "https://api.anthropic.com/v1/messages";
-    private static final String ANTHROPIC_VERSION = "2023-06-01";
+    private static final String CLAUDE_MESSAGES_URL = ConfigReader.get("CLAUDE_MESSAGES_URL");
+    private static final String ANTHROPIC_VERSION = ConfigReader.get("ANTHROPIC_VERSION");
 
     private final String apiKey;
     private final String model;
