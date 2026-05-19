@@ -3,7 +3,7 @@ package pages.actions;
 import com.microsoft.playwright.Page;
 import config.LocatorReader;
 import core.heal.dto.ResolvedLocator;
-import core.heal.healing.SelfHealingEngine;
+import core.heal.SelfHealingEngine;
 import io.qameta.allure.Allure;
 
 
@@ -131,12 +131,16 @@ public class ElementActions implements IElementActions{
     }
 
     @Override
+    public void assertElementContains(String elementName, String expectedValue) {
+
+    }
+
+    @Override
     public void assertUrlContains(String elementName, boolean expectedStatus) {
         Allure.step(
                 "Assert current URL contains value from: " + elementName + " is " + expectedStatus,
                 () -> {
                     String actualUrl = page.url();
-                    String expectedUrlPart = LocatorReader.get(elementName);
 
                     String strategyUsed = "SYSTEM_VALUE";
                     String locatorUsed = "page.url()";
@@ -146,35 +150,33 @@ public class ElementActions implements IElementActions{
                             "text/plain",
                             """
                             Action: assertUrlContains
-                            Element: %s
+                            Element: lnk_current_url
                             Strategy used: %s
                             Locator used: %s
                             Expected URL part: %s
                             Actual URL: %s
                             """.formatted(
-                                    elementName,
                                     strategyUsed,
                                     locatorUsed,
-                                    expectedUrlPart,
+                                    elementName,
                                     actualUrl
                             )
                     );
 
-                    boolean actualStatus = actualUrl != null && actualUrl.contains(expectedUrlPart);
+                    boolean actualStatus = actualUrl != null && actualUrl.contains(elementName);
 
                     Allure.addAttachment(
                             "URL assertion details",
                             "text/plain",
                             """
                             Assertion: current URL contains expected value
-                            Element: %s
+                            Element: lnk_current_url
                             Expected value: %s
                             Expected status: %s
                             Actual URL: %s
                             Actual status: %s
                             """.formatted(
                                     elementName,
-                                    expectedUrlPart,
                                     expectedStatus,
                                     actualUrl,
                                     actualStatus
@@ -185,7 +187,7 @@ public class ElementActions implements IElementActions{
                             expectedStatus,
                             actualStatus,
                             "URL assertion failed. Expected current URL to contain '"
-                                    + expectedUrlPart
+                                    + elementName
                                     + "' = "
                                     + expectedStatus
                                     + ", but actual URL was: "
@@ -248,6 +250,11 @@ public class ElementActions implements IElementActions{
     }
 
     @Override
+    public void assertElementValueContains(String elementName, String expectedValue) {
+
+    }
+
+    @Override
     public void assertElementEquals(String elementName, String expectedValue, boolean expectedStatus) {
         Allure.step(
                 "Assert element " + elementName + " equals '" + expectedValue + "' is " + expectedStatus,
@@ -295,6 +302,11 @@ public class ElementActions implements IElementActions{
     }
 
     @Override
+    public void assertElementEquals(String elementName, String expectedValue) {
+
+    }
+
+    @Override
     public void assertElementVisible(String elementName) {
         Allure.step("Assert element visible: " + elementName, () -> {
             ResolvedLocator resolvedLocator = selfHealingEngine.resolveLocator(elementName);
@@ -303,6 +315,11 @@ public class ElementActions implements IElementActions{
 
             assertThat(resolvedLocator.getLocator()).isVisible();
         });
+    }
+
+    @Override
+    public void assertUrlContains(String elementName) {
+
     }
 
     @Override

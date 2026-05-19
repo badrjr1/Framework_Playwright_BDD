@@ -6,6 +6,7 @@ import core.heal.dto.HealingResult;
 import core.heal.locator.LocatorDefinition;
 import core.heal.locator.LocatorFactory;
 import core.heal.locator.LocatorParser;
+import core.heal.validator.LocatorValidator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -14,9 +15,11 @@ public class HeuristicStrategy {
     private static final Logger logger = LoggerFactory.getLogger(HeuristicStrategy.class);
 
     private final LocatorFactory locatorFactory;
+    private final LocatorValidator locatorValidator;
 
     public HeuristicStrategy(Page page) {
         this.locatorFactory = new LocatorFactory(page);
+        this.locatorValidator = new LocatorValidator(locatorFactory);
 
         logger.info("[HEURISTIC] HeuristicStrategy initialized");
     }

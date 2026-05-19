@@ -1,15 +1,19 @@
 package core.heal.ai;
 
-import config.ConfigReader;
 import core.heal.ai.clientsIA.ClaudeAiClient;
 import core.heal.ai.clientsIA.GeminiClient;
 import core.heal.ai.clientsIA.OpenAiClient;
+import io.github.cdimascio.dotenv.Dotenv;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class AiClientFactory {
 
     private static final Logger logger = LoggerFactory.getLogger(AiClientFactory.class);
+
+    private static final Dotenv dotenv = Dotenv.configure()
+            .ignoreIfMissing()
+            .load();
 
     private AiClientFactory() {
         // Utility class
@@ -51,7 +55,7 @@ public class AiClientFactory {
 
     private static String getOptional(String key) {
         try {
-            return System.getenv(key);
+            return dotenv.get(key);
         } catch (Exception e) {
             return "";
         }

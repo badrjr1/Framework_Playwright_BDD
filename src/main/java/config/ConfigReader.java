@@ -14,8 +14,4 @@ public class ConfigReader extends ConfigLoader {
         return INSTANCE.getProperty(key);
     }
 
-//    public static int getInt(String key) {
-//        return Integer.parseInt(properties.getProperty(key));
-//    }
-
 }

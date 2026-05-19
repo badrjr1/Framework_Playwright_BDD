@@ -1,34 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
 <configuration>
 
-    <!-- Console logs -->
-    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+    <!-- Console appender -->
+    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
-            <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{40} - %msg%n</pattern>
+            <pattern>%d{HH:mm:ss.SSS} %-5level [%thread] %logger{45} - %msg%n</pattern>
         </encoder>
     </appender>
 
-    <!-- File logs -->
-    <appender name="FILE" class="ch.qos.logback.core.FileAppender">
-        <file>target/logs/framework-test.log</file>
-        <append>true</append>
-        <encoder>
-            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{50} - %msg%n</pattern>
-        </encoder>
-    </appender>
+    <!-- Niveau global de ton framework -->
+    <property name="FRAMEWORK_LOG_LEVEL" value="DEBUG"/>
 
-    <!-- Logs du framework -->
-    <logger name="hooks" level="INFO"/>
-    <logger name="runners" level="INFO"/>
-    <logger name="stepdefinitions" level="INFO"/>
-    <logger name="pages" level="INFO"/>
-    <logger name="core" level="INFO"/>
-    <logger name="config" level="INFO"/>
-    <logger name="heal" level="INFO"/>
+    <!-- Packages du framework -->
+    <logger name="hooks" level="${FRAMEWORK_LOG_LEVEL}"/>
+    <logger name="runners" level="${FRAMEWORK_LOG_LEVEL}"/>
+    <logger name="stepdefinitions" level="${FRAMEWORK_LOG_LEVEL}"/>
+    <logger name="pages" level="${FRAMEWORK_LOG_LEVEL}"/>
+    <logger name="core" level="${FRAMEWORK_LOG_LEVEL}"/>
+    <logger name="config" level="${FRAMEWORK_LOG_LEVEL}"/>
 
-    <!-- Niveau global -->
-    <root level="INFO">
-        <appender-ref ref="CONSOLE"/>
-        <appender-ref ref="FILE"/>
+    <!-- Si tu as un package séparé heal -->
+    <logger name="heal" level="${FRAMEWORK_LOG_LEVEL}"/>
+
+    <!-- Niveau global des librairies externes -->
+    <property name="LIBRARY_LOG_LEVEL" value="WARN"/>
+    <!-- Réduire le bruit des librairies librairie -->
+    <logger name="com.microsoft.playwright" level="${LIBRARY_LOG_LEVEL}"/>
+    <logger name="io.cucumber" level="${LIBRARY_LOG_LEVEL}"/>
+    <logger name="org.junit" level="${LIBRARY_LOG_LEVEL}"/>
+    <logger name="org.apache" level="${LIBRARY_LOG_LEVEL}"/>
+    <logger name="com.fasterxml.jackson" level="${LIBRARY_LOG_LEVEL}"/>
+    <logger name="io.qameta.allure" level="${LIBRARY_LOG_LEVEL}"/>
+
+    <!-- Niveau par défaut -->
+    <root level="WARN">
+        <appender-ref ref="STDOUT"/>
     </root>
 
 </configuration>
