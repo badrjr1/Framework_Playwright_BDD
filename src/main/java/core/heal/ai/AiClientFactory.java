@@ -22,12 +22,16 @@ public class AiClientFactory {
 
         if (isFilled(openAiKey)) {
             logger.info("[AI-FACTORY] OpenAI API key detected. Using OpenAI client.");
-            return new OpenAiClient(openAiKey, getOptionalOrDefault("OPENAI_MODEL", "gpt-4.1-mini"));
+            return new OpenAiClient(
+                    openAiKey,
+                    getOptionalOrDefault("OPENAI_MODEL", "gpt-4.1-mini"));
         }
 
         if (isFilled(geminiKey)) {
             logger.info("[AI-FACTORY] Gemini API key detected. Using Gemini client.");
-            return new GeminiClient(geminiKey, getOptionalOrDefault("GEMINI_MODEL", "gemini-2.5-flash"));
+            return new GeminiClient(
+                    geminiKey,
+                    getOptionalOrDefault("GEMINI_MODEL", "gemini-2.5-flash"));
         }
 
         if (isFilled(claudeKey)) {
@@ -47,7 +51,7 @@ public class AiClientFactory {
 
     private static String getOptional(String key) {
         try {
-            return ConfigReader.get(key);
+            return System.getenv(key);
         } catch (Exception e) {
             return "";
         }
