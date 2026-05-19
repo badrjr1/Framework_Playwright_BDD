@@ -13,8 +13,7 @@ import org.slf4j.LoggerFactory;
 
 public class AiResolverStrategy {
 
-    private static final Logger logger =
-            LoggerFactory.getLogger(AiResolverStrategy.class);
+    private static final Logger logger = LoggerFactory.getLogger(AiResolverStrategy.class);
 
     private final AiHealingStrategy aiHealingStrategy;
     private final LocatorValidator locatorValidator;
