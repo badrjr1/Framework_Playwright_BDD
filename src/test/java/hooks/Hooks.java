@@ -1,6 +1,7 @@
 package hooks;
 
 import com.microsoft.playwright.*;
+import config.ConfigReader;
 import io.cucumber.java.*;
 import io.qameta.allure.Allure;
 import org.slf4j.Logger;
@@ -31,18 +32,70 @@ public class Hooks {
                 Playwright playwright = Playwright.create();
 
                 logger.info("Launching Chromium browser");
-                Browser browser = playwright.chromium().launch(
-                        new BrowserType
-                                .LaunchOptions()
-                                .setHeadless(true)
-                );
 
-                logger.info("Creating browser context with video recording enabled");
-                BrowserContext context = browser.newContext(
-                        new Browser.NewContextOptions()
-                                .setRecordVideoDir(Paths.get("target/videos/"))
-                                .setRecordVideoSize(1280, 720)
-                );
+                String browserName = ConfigReader.get("browser.name");
+                boolean headless = Boolean.parseBoolean(ConfigReader.get("browser.headless"));
+
+                logger.info("Launching browser | name: {} | headless: {}", browserName, headless);
+
+                BrowserType browserType;
+                BrowserType.LaunchOptions launchOptions = new BrowserType.LaunchOptions()
+                        .setHeadless(headless);
+
+                switch (browserName.toLowerCase()) {
+                    case "chromium":
+                        browserType = playwright.chromium();
+                        break;
+
+                    case "edge":
+                    case "msedge":
+                        browserType = playwright.chromium();
+                        launchOptions.setChannel("msedge");
+                        break;
+
+                    case "chrome":
+                        browserType = playwright.chromium();
+                        launchOptions.setChannel("chrome");
+                        break;
+
+                    case "firefox":
+                        browserType = playwright.firefox();
+                        break;
+
+                    case "webkit":
+                        browserType = playwright.webkit();
+                        break;
+
+                    default:
+                        logger.error("Unsupported browser name: {}", browserName);
+                        throw new RuntimeException(
+                                "Unsupported browser name: " + browserName
+                                        + ". Supported values are: chromium, chrome, edge, msedge, firefox, webkit"
+                        );
+                }
+
+                Browser browser = browserType.launch(launchOptions);
+
+                logger.info("Browser launched successfully | name: {}", browserName);
+
+                logger.info("Creating browser context");
+
+                Browser.NewContextOptions contextOptions = new Browser.NewContextOptions();
+
+                if (Boolean.parseBoolean(ConfigReader.get("video.enabled"))) {
+                    logger.info("Video recording enabled");
+
+                    contextOptions
+                            .setRecordVideoDir(Paths.get(ConfigReader.get("video.dir")))
+                            .setRecordVideoSize(
+                                    Integer.parseInt(ConfigReader.get("video.width")),
+                                    Integer.parseInt(ConfigReader.get("video.height"))
+                            );
+                } else {
+                    logger.info("Video recording disabled");
+                }
+
+                BrowserContext context = browser.newContext(contextOptions);
 
                 logger.info("Creating new Playwright page");
                 Page page = context.newPage();
@@ -80,6 +133,11 @@ public class Hooks {
             return;
         }
 
+        if (!Boolean.parseBoolean(ConfigReader.get("screenshot.on.failure"))) {
+            logger.info("Screenshot on failure is disabled");
+            return;
+        }
+
         logger.error("Step failed in scenario: {}", scenario.getName());
 
         Page page = pageThread.get();
@@ -95,16 +153,8 @@ public class Hooks {
 
             byte[] screenshot = page.screenshot(
                     new Page.ScreenshotOptions()
-                            .setFullPage(true)
+                            .setFullPage(Boolean.parseBoolean(ConfigReader.get("screenshot.full.page")))
             );
-
-            scenario.attach(
-                    screenshot,
-                    "image/png",
-                    "FAILED_SCREENSHOT_" + sanitizeFileName(scenario.getName())
-            );
-
-            logger.info("Screenshot attached to Cucumber report for scenario: {}", scenario.getName());
 
             Allure.addAttachment(
                     "FAILED_SCREENSHOT_" + scenario.getName(),
@@ -185,7 +235,11 @@ public class Hooks {
         }
 
         try {
-            if (videoPath != null && Files.exists(videoPath)) {
+            if (
+                    Boolean.parseBoolean(ConfigReader.get("video.attach"))
+                            && videoPath != null
+                            && Files.exists(videoPath)
+            ) {
 
                 logger.info("Attaching {} video to Allure for scenario: {}", status, scenarioName);
 
@@ -249,7 +303,12 @@ public class Hooks {
 
     private void attachLogFileToAllure() {
         try {
-            Path logFile = Path.of("target/logs/framework-test.log");
+            if (!Boolean.parseBoolean(ConfigReader.get("logs.attach"))) {
+                logger.info("Log attachment is disabled");
+                return;
+            }
+
+            Path logFile = Path.of(ConfigReader.get("logs.file"));
 
             if (Files.exists(logFile)) {
                 Allure.addAttachment(

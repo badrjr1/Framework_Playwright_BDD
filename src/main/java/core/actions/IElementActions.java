@@ -36,10 +36,5 @@ public interface IElementActions {
     String getValue(String elementName);
     void assertElementVisible(String elementName);
     void assertUrlContains(String elementName);
-    void assertUrlContains(String elementName, boolean expected);
-    void assertElementEquals(String elementName, String expectedValue, boolean expectedStatus);
-    void assertElementValueContains(String elementName, String expectedValue, boolean expectedStatus);
-    void assertElementContains(String elementName, String expectedValue, boolean expectedStatus);
-    void assertElementValueEquals(String elementName, String expectedValue, boolean expectedStatus);
 
 }

@@ -18,7 +18,7 @@ public class GeminiClient implements AiClient {
 
     private static final Logger logger = LoggerFactory.getLogger(GeminiClient.class);
 
-    private static final String GEMINI_BASE_URL = ConfigReader.get("GEMINI_BASE_URL");
+    private static final String GEMINI_BASE_URL = ConfigReader.get("ai.gemini.base.url");
 
     private final String apiKey;
     private final String model;

@@ -12,11 +12,12 @@ Feature: Login functionality
     * wait for element txt_password to become visible
     * write <password> in field txt_password
     * assert value of that element txt_password equals <password>
+    * save screenshot with name login
     * click on btn_login
-    * assert value of that element lnk_current_url contains <url_contains> is <status>
-
+    * assert value of that element lnk_current_url contains <url_contains>
     Examples:
-      | email                          | password | url_contains          | status |
-      | pranav@testroverautomation.com | Test1234 | route=account/account | true   |
-      | fail@test.test                 | Test123  | route=account/account | false  |
+      | email                          | password | url_contains          |
+      | pranav@testroverautomation.com | Test1234 | route=account/account |
+      | fail@test.test                 | Test123  | route=account/account |
+
 

@@ -230,20 +230,18 @@ public class ElementActions implements IElementActions {
     }
 
     @Override
-    public void assertElementContains(String elementName, String expectedValue, boolean expectedStatus) {
+    public void assertElementContains(String elementName, String expectedValue) {
         Allure.step(
-                "Assert element " + elementName + " contains '" + expectedValue + "' is " + expectedStatus,
+                "Assert element " + elementName + " contains '" + expectedValue + "'",
                 () -> {
                     try {
                         String finalExpectedValue = resolveDynamicValue(expectedValue);
 
                         logger.info(
-                                "[ASSERT] Element contains started | element: {} | expectedValue: {} | expectedStatus: {}",
+                                "[ASSERT] Element contains started | element: {} | expectedValue: {}",
                                 elementName,
-                                finalExpectedValue,
-                                expectedStatus
+                                finalExpectedValue
                         );
-
 
                         ResolvedLocator resolvedLocator = selfHealingEngine.resolveLocator(elementName);
 
@@ -253,11 +251,9 @@ public class ElementActions implements IElementActions {
 
                         String actualText = resolvedLocator.getLocator().textContent();
 
-                        System.out.println("==".repeat(20));
-                        System.out.println(actualText);
-                        System.out.println("==".repeat(20));
-
-
+                        if (actualText != null) {
+                            actualText = actualText.trim();
+                        }
 
                         boolean actualStatus = actualText != null && actualText.contains(finalExpectedValue);
 
@@ -268,37 +264,34 @@ public class ElementActions implements IElementActions {
                                 Assertion: element contains
                                 Element: %s
                                 Expected value: %s
-                                Expected status: %s
                                 Actual text: %s
                                 Actual status: %s
                                 """.formatted(
                                         elementName,
                                         finalExpectedValue,
-                                        expectedStatus,
                                         actualText,
                                         actualStatus
                                 )
                         );
 
                         logger.info(
-                                "[ASSERT] Element contains result | element: {} | actualStatus: {} | expectedStatus: {}",
+                                "[ASSERT] Element contains result | element: {} | actualText: {} | expectedValue: {} | result: {}",
                                 elementName,
-                                actualStatus,
-                                expectedStatus
+                                actualText,
+                                finalExpectedValue,
+                                actualStatus
                         );
 
-                        assertEquals(
-                                expectedStatus,
-                                actualStatus,
-                                "Assertion failed. Expected element '"
-                                        + elementName
-                                        + "' to contain '"
-                                        + finalExpectedValue
-                                        + "' = "
-                                        + expectedStatus
-                                        + ", but actual text was: "
-                                        + actualText
-                        );
+                        if (actualText == null || !actualText.contains(finalExpectedValue)) {
+                            throw new AssertionError(
+                                    "Assertion failed. Expected element '"
+                                            + elementName
+                                            + "' to contain '"
+                                            + finalExpectedValue
+                                            + "', but actual text was: "
+                                            + actualText
+                            );
+                        }
 
                     } catch (Exception e) {
                         logger.error(
@@ -312,11 +305,6 @@ public class ElementActions implements IElementActions {
                     }
                 }
         );
-    }
-
-    @Override
-    public void assertElementContains(String elementName, String expectedValue) {
-        assertElementContains(elementName, expectedValue, true);
     }
 
     @Override
@@ -421,22 +409,16 @@ public class ElementActions implements IElementActions {
 
     @Override
     public void assertElementValueEquals(String elementName, String expectedValue) {
-        assertElementValueEquals(elementName, expectedValue, true);
-    }
-
-    @Override
-    public void assertElementValueEquals(String elementName, String expectedValue, boolean expectedStatus) {
         Allure.step(
-                "Assert value of element " + elementName + " equals '" + expectedValue + "' is " + expectedStatus,
+                "Assert value of element " + elementName + " equals '" + expectedValue + "'",
                 () -> {
                     try {
                         String finalExpectedValue = resolveDynamicValue(expectedValue);
 
                         logger.info(
-                                "[ASSERT] Element value equals started | element: {} | expectedValue: {} | expectedStatus: {}",
+                                "[ASSERT] Element value equals started | element: {} | expectedValue: {}",
                                 elementName,
-                                finalExpectedValue,
-                                expectedStatus
+                                finalExpectedValue
                         );
 
                         ResolvedLocator resolvedLocator = selfHealingEngine.resolveLocator(elementName);
@@ -454,32 +436,34 @@ public class ElementActions implements IElementActions {
                                 Assertion: element value equals
                                 Element: %s
                                 Expected value: %s
-                                Expected status: %s
                                 Actual value: %s
                                 Actual status: %s
                                 """.formatted(
                                         elementName,
                                         finalExpectedValue,
-                                        expectedStatus,
                                         actualValue,
                                         actualStatus
                                 )
                         );
 
+                        logger.info(
+                                "[ASSERT] Element value equals result | element: {} | actualValue: {} | expectedValue: {} | result: {}",
+                                elementName,
+                                actualValue,
+                                finalExpectedValue,
+                                actualStatus
+                        );
+
                         assertEquals(
-                                expectedStatus,
-                                actualStatus,
+                                finalExpectedValue,
+                                actualValue,
                                 "Assertion failed. Expected value of '"
                                         + elementName
                                         + "' to equal '"
                                         + finalExpectedValue
-                                        + "' = "
-                                        + expectedStatus
-                                        + ", but actual value was: "
+                                        + "', but actual value was: "
                                         + actualValue
                         );
-
-                        logger.info("[ASSERT] Element value equals completed | element: {}", elementName);
 
                     } catch (Exception e) {
                         logger.error(
@@ -583,19 +567,18 @@ public class ElementActions implements IElementActions {
     }
 
     @Override
-    public void assertUrlContains(String expectedUrlPart, boolean expectedStatus) {
+    public void assertUrlContains(String expectedUrlPart) {
         Allure.step(
-                "Assert current URL contains: " + expectedUrlPart + " is " + expectedStatus,
+                "Assert current URL contains: " + expectedUrlPart,
                 () -> {
                     try {
                         String actualUrl = page.url();
                         String finalExpectedUrlPart = resolveUrlExpectedValue(expectedUrlPart);
 
                         logger.info(
-                                "[ASSERT] URL contains started | expected: {} | actualUrl: {} | expectedStatus: {}",
+                                "[ASSERT] URL contains started | expected: {} | actualUrl: {}",
                                 finalExpectedUrlPart,
-                                actualUrl,
-                                expectedStatus
+                                actualUrl
                         );
 
                         boolean actualStatus = actualUrl != null && actualUrl.contains(finalExpectedUrlPart);
@@ -607,35 +590,30 @@ public class ElementActions implements IElementActions {
                                 Assertion: current URL contains expected value
                                 Input value: %s
                                 Resolved expected value: %s
-                                Expected status: %s
                                 Actual URL: %s
                                 Actual status: %s
                                 """.formatted(
                                         expectedUrlPart,
                                         finalExpectedUrlPart,
-                                        expectedStatus,
                                         actualUrl,
                                         actualStatus
                                 )
                         );
 
                         logger.info(
-                                "[ASSERT] URL contains result | expected: {} | actualStatus: {} | expectedStatus: {}",
+                                "[ASSERT] URL contains result | expected: {} | actualStatus: {}",
                                 finalExpectedUrlPart,
-                                actualStatus,
-                                expectedStatus
+                                actualStatus
                         );
 
-                        assertEquals(
-                                expectedStatus,
-                                actualStatus,
-                                "URL assertion failed. Expected current URL to contain '"
-                                        + finalExpectedUrlPart
-                                        + "' = "
-                                        + expectedStatus
-                                        + ", but actual URL was: "
-                                        + actualUrl
-                        );
+                        if (!actualStatus) {
+                            throw new AssertionError(
+                                    "URL assertion failed. Expected current URL to contain '"
+                                            + finalExpectedUrlPart
+                                            + "', but actual URL was: "
+                                            + actualUrl
+                            );
+                        }
 
                     } catch (Exception e) {
                         logger.error(
@@ -651,23 +629,17 @@ public class ElementActions implements IElementActions {
     }
 
     @Override
-    public void assertUrlContains(String expectedUrlPart) {
-        assertUrlContains(expectedUrlPart, true);
-    }
-
-    @Override
-    public void assertElementValueContains(String elementName, String expectedValue, boolean expectedStatus) {
+    public void assertElementValueContains(String elementName, String expectedValue) {
         Allure.step(
-                "Assert value of element " + elementName + " contains '" + expectedValue + "' is " + expectedStatus,
+                "Assert value of element " + elementName + " contains '" + expectedValue + "'",
                 () -> {
                     try {
                         String finalExpectedValue = resolveDynamicValue(expectedValue);
 
                         logger.info(
-                                "[ASSERT] Element value contains started | element: {} | expectedValue: {} | expectedStatus: {}",
+                                "[ASSERT] Element value contains started | element: {} | expectedValue: {}",
                                 elementName,
-                                finalExpectedValue,
-                                expectedStatus
+                                finalExpectedValue
                         );
 
                         ResolvedLocator resolvedLocator = selfHealingEngine.resolveLocator(elementName);
@@ -689,37 +661,34 @@ public class ElementActions implements IElementActions {
                                 Assertion: element value contains
                                 Element: %s
                                 Expected value: %s
-                                Expected status: %s
                                 Actual value: %s
                                 Actual status: %s
                                 """.formatted(
                                         elementName,
                                         finalExpectedValue,
-                                        expectedStatus,
                                         actualValue,
                                         actualStatus
                                 )
                         );
 
                         logger.info(
-                                "[ASSERT] Element value contains result | element: {} | actualStatus: {} | expectedStatus: {}",
+                                "[ASSERT] Element value contains result | element: {} | actualValue: {} | expectedValue: {} | result: {}",
                                 elementName,
-                                actualStatus,
-                                expectedStatus
+                                actualValue,
+                                finalExpectedValue,
+                                actualStatus
                         );
 
-                        assertEquals(
-                                expectedStatus,
-                                actualStatus,
-                                "Assertion failed. Expected value of '"
-                                        + elementName
-                                        + "' to contain '"
-                                        + finalExpectedValue
-                                        + "' = "
-                                        + expectedStatus
-                                        + ", but actual value was: "
-                                        + actualValue
-                        );
+                        if (actualValue == null || !actualValue.contains(finalExpectedValue)) {
+                            throw new AssertionError(
+                                    "Assertion failed. Expected value of '"
+                                            + elementName
+                                            + "' to contain '"
+                                            + finalExpectedValue
+                                            + "', but actual value was: "
+                                            + actualValue
+                            );
+                        }
 
                     } catch (Exception e) {
                         logger.error(
@@ -735,24 +704,19 @@ public class ElementActions implements IElementActions {
         );
     }
 
-    @Override
-    public void assertElementValueContains(String elementName, String expectedValue) {
-        assertElementValueContains(elementName, expectedValue, true);
-    }
 
     @Override
-    public void assertElementEquals(String elementName, String expectedValue, boolean expectedStatus) {
+    public void assertElementEquals(String elementName, String expectedValue) {
         Allure.step(
-                "Assert element " + elementName + " equals '" + expectedValue + "' is " + expectedStatus,
+                "Assert element " + elementName + " equals '" + expectedValue + "'",
                 () -> {
                     try {
                         String finalExpectedValue = resolveDynamicValue(expectedValue);
 
                         logger.info(
-                                "[ASSERT] Element equals started | element: {} | expectedValue: {} | expectedStatus: {}",
+                                "[ASSERT] Element equals started | element: {} | expectedValue: {}",
                                 elementName,
-                                finalExpectedValue,
-                                expectedStatus
+                                finalExpectedValue
                         );
 
                         ResolvedLocator resolvedLocator = selfHealingEngine.resolveLocator(elementName);
@@ -760,6 +724,11 @@ public class ElementActions implements IElementActions {
                         addLocatorInfoToAllure("assertElementEquals", elementName, resolvedLocator);
 
                         String actualText = resolvedLocator.getLocator().textContent();
+
+                        if (actualText != null) {
+                            actualText = actualText.trim();
+                        }
+
                         boolean actualStatus = actualText != null && actualText.equals(finalExpectedValue);
 
                         Allure.addAttachment(
@@ -769,35 +738,32 @@ public class ElementActions implements IElementActions {
                                 Assertion: element equals
                                 Element: %s
                                 Expected value: %s
-                                Expected status: %s
                                 Actual text: %s
                                 Actual status: %s
                                 """.formatted(
                                         elementName,
                                         finalExpectedValue,
-                                        expectedStatus,
                                         actualText,
                                         actualStatus
                                 )
                         );
 
                         logger.info(
-                                "[ASSERT] Element equals result | element: {} | actualStatus: {} | expectedStatus: {}",
+                                "[ASSERT] Element equals result | element: {} | actualText: {} | expectedValue: {} | result: {}",
                                 elementName,
-                                actualStatus,
-                                expectedStatus
+                                actualText,
+                                finalExpectedValue,
+                                actualStatus
                         );
 
                         assertEquals(
-                                expectedStatus,
-                                actualStatus,
+                                finalExpectedValue,
+                                actualText,
                                 "Assertion failed. Expected element '"
                                         + elementName
                                         + "' to equal '"
                                         + finalExpectedValue
-                                        + "' = "
-                                        + expectedStatus
-                                        + ", but actual text was: "
+                                        + "', but actual text was: "
                                         + actualText
                         );
 
@@ -813,11 +779,6 @@ public class ElementActions implements IElementActions {
                     }
                 }
         );
-    }
-
-    @Override
-    public void assertElementEquals(String elementName, String expectedValue) {
-        assertElementEquals(elementName, expectedValue, true);
     }
 
     @Override

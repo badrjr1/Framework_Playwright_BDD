@@ -18,7 +18,7 @@ public class OpenAiClient implements AiClient {
 
     private static final Logger logger = LoggerFactory.getLogger(OpenAiClient.class);
 
-    private static final String OPENAI_RESPONSES_URL = ConfigReader.get("OPENAI_RESPONSES_URL");
+    private static final String OPENAI_RESPONSES_URL = ConfigReader.get("ai.openai.responses.url");
 
     private final String apiKey;
     private final String model;

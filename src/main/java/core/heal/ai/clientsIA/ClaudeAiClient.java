@@ -18,8 +18,8 @@ public class ClaudeAiClient implements AiClient {
 
     private static final Logger logger = LoggerFactory.getLogger(ClaudeAiClient.class);
 
-    private static final String CLAUDE_MESSAGES_URL = ConfigReader.get("CLAUDE_MESSAGES_URL");
-    private static final String ANTHROPIC_VERSION = ConfigReader.get("ANTHROPIC_VERSION");
+    private static final String CLAUDE_MESSAGES_URL = ConfigReader.get("ai.claude.messages.url");
+    private static final String ANTHROPIC_VERSION = ConfigReader.get("ai.anthropic.version");
 
     private final String apiKey;
     private final String model;

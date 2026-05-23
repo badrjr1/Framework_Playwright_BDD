@@ -23,11 +23,6 @@ public class UiCommonSteps extends BaseSteps {
         actions().searchLocatorsInFile(fileName);
     }
 
-    @When("wait for element (.+) to become visible$")
-    public void wait_for_element_to_become_visible(String elementName) {
-        actions().waitForElementVisible(elementName);
-    }
-
     @When("switch to frame (\\d+)$")
     public void switch_to_frame_index(int index) {
         actions().switchToFrameByIndex(index);
@@ -98,24 +93,13 @@ public class UiCommonSteps extends BaseSteps {
         actions().assertElementContains(elementName, expectedValue);
     }
 
-    @Then("^assert value of that element (\\S+) contains (?!.*\\sis\\s(?:true|false)$)(.+)$")
+    @Then("^assert value of that element (.+) contains (.+)$")
     public void assert_value_of_that_element_contains(String elementName, String expectedValue) {
 
         if (elementName.equalsIgnoreCase("lnk_current_url")) {
             actions().assertUrlContains(expectedValue);
         } else {
             actions().assertElementValueContains(elementName, expectedValue);
-        }
-    }
-
-    @Then("assert value of that element (.+) contains (.+) is (true|false)$")
-    public void assert_value_of_that_element_contains_is( String elementName, String expectedValue, String expectedStatus) {
-        boolean status = Boolean.parseBoolean(expectedStatus);
-
-        if (elementName.equalsIgnoreCase("lnk_current_url")) {
-            actions().assertUrlContains(expectedValue, status);
-        } else {
-            actions().assertElementValueContains(elementName, expectedValue, status);
         }
     }
 
@@ -159,7 +143,10 @@ public class UiCommonSteps extends BaseSteps {
         actions().scrollToElement(elementName);
     }
 
-    //* wait for element mn_new_activity to become visible
+    @When("wait for element (.+) to become visible$")
+    public void wait_for_element_to_become_visible(String elementName) {
+        actions().waitForElementVisible(elementName);
+    }
 
     @When("wait (\\d+) seconds$")
     public void wait_seconds(int seconds) {

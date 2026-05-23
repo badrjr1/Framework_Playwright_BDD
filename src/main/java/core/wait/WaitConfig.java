@@ -24,14 +24,14 @@ public class WaitConfig {
     }
 
     public static double defaultTimeout() {
-        return Double.parseDouble(properties.getProperty("default.timeout", "10000"));
+        return Double.parseDouble(properties.getProperty("timeout.default", "10000"));
     }
 
     public static double shortTimeout() {
-        return Double.parseDouble(properties.getProperty("short.timeout", "3000"));
+        return Double.parseDouble(properties.getProperty("timeout.short", "3000"));
     }
 
     public static double longTimeout() {
-        return Double.parseDouble(properties.getProperty("long.timeout", "30000"));
+        return Double.parseDouble(properties.getProperty("timeout.long", "30000"));
     }
 }
