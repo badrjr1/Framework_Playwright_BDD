@@ -1,8 +1,8 @@
 package pages;
 
 import com.microsoft.playwright.Page;
-import core.actions.ElementActions;
-import core.actions.IElementActions;
+import core.actions.ui.ElementActions;
+import core.actions.ui.IElementActions;
 
 public class HomePage {
 

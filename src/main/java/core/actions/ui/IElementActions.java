@@ -1,4 +1,4 @@
-package core.actions;
+package core.actions.ui;
 
 public interface IElementActions {
     void login();
