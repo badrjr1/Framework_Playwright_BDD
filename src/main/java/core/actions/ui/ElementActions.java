@@ -386,24 +386,73 @@ public class ElementActions implements IElementActions {
     @Override
     public void searchLocatorsInFile(String fileName) {
         Allure.step("Search locators in file: " + fileName, () -> {
-            logger.info("[LOCATOR] Search locators in file requested: {}", fileName);
+            try {
+                logger.info("[LOCATOR] Selecting locator file | file: {}", fileName);
 
-            /*
-             * Si ton LocatorReader charge déjà tous les fichiers .properties
-             * depuis src/main/resources/locators, cette méthode peut rester informative.
-             *
-             * Elle existe seulement pour respecter la syntaxe Gherkin :
-             * * search locators in the order_page file
-             */
+                LocatorReader.useLocatorFile(fileName);
 
-            Allure.addAttachment(
-                    "Locator file info",
-                    "text/plain",
-                    """
-                    Requested locator file: %s
-                    Status: LocatorReader loads locators globally
-                    """.formatted(fileName)
-            );
+                Allure.addAttachment(
+                        "Locator file selected",
+                        "text/plain",
+                        """
+                        Action: searchLocatorsInFile
+                        File: %s
+                        Folder: ROOT
+                        """.formatted(fileName)
+                );
+
+                logger.info("[LOCATOR] Locator file selected successfully | file: {}", fileName);
+
+            } catch (Exception e) {
+                logger.error(
+                        "[LOCATOR] Failed to select locator file | file: {} | reason: {}",
+                        fileName,
+                        e.getMessage(),
+                        e
+                );
+                throw e;
+            }
+        });
+    }
+
+    @Override
+    public void searchLocatorsInFile(String fileName, String folderName) {
+        Allure.step("Search locators in file: " + fileName + " of folder: " + folderName, () -> {
+            try {
+                logger.info(
+                        "[LOCATOR] Selecting locator file | folder: {} | file: {}",
+                        folderName,
+                        fileName
+                );
+
+                LocatorReader.useLocatorFile(fileName, folderName);
+
+                Allure.addAttachment(
+                        "Locator file selected",
+                        "text/plain",
+                        """
+                        Action: searchLocatorsInFile
+                        File: %s
+                        Folder: %s
+                        """.formatted(fileName, folderName)
+                );
+
+                logger.info(
+                        "[LOCATOR] Locator file selected successfully | folder: {} | file: {}",
+                        folderName,
+                        fileName
+                );
+
+            } catch (Exception e) {
+                logger.error(
+                        "[LOCATOR] Failed to select locator file | folder: {} | file: {} | reason: {}",
+                        folderName,
+                        fileName,
+                        e.getMessage(),
+                        e
+                );
+                throw e;
+            }
         });
     }
 

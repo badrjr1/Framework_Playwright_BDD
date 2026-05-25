@@ -10,12 +10,20 @@ public class ConfigLoader {
     protected final Properties properties = new Properties();
     protected final Path filePath;
 
+    protected ConfigLoader() {
+        this.filePath = null;
+    }
+
     protected ConfigLoader(Path filePath) {
         this.filePath = filePath;
         load();
     }
 
     protected void load() {
+        if (filePath == null) {
+            throw new RuntimeException("Aucun fichier properties défini pour ce ConfigLoader");
+        }
+
         try (InputStream input = new FileInputStream(filePath.toFile())) {
 
             properties.clear();

@@ -16,12 +16,8 @@ public class BaseSteps {
     protected IElementActions actions() {
         return new ElementActions(page());
     }
-    private IJobActions jobActions;
 
     protected IJobActions jobActions() {
-        if (jobActions == null) {
-            jobActions = new JobActions();
-        }
-        return jobActions;
+        return new JobActions();
     }
 }

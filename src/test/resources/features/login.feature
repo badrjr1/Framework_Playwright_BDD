@@ -5,7 +5,9 @@ Feature: Login functionality
     * log in to the application
 
   Scenario Outline: User logs in successfully
+    * search locators in the home_page
     * click on btn_my_account
+    * search locators in the login_page
     * wait for element txt_email to become visible
     * write <email> in field txt_email
     * assert value of that element txt_email equals <email>

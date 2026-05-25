@@ -3,43 +3,74 @@ package config;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 
-public class LocatorReader {
+public class LocatorReader extends ConfigLoader {
 
     private static final Logger logger = LoggerFactory.getLogger(LocatorReader.class);
 
     private static final Path LOCATORS_DIR =
-            Paths.get("src/main/resources/locators");
+            Paths.get(ConfigReader.get("locators.root"));
 
-    private static final Properties properties = new Properties();
-
-    /**
-     * Permet de savoir dans quel fichier se trouve chaque locator.
-     * Exemple :
-     * txt_email -> src/main/resources/locators/login.properties
-     */
     private static final Map<String, Path> keyFileMap = new HashMap<>();
+
+    private static final ThreadLocal<Properties> scopedProperties =
+            ThreadLocal.withInitial(Properties::new);
+
+    private static final ThreadLocal<Path> scopedFile =
+            new ThreadLocal<>();
 
     private static final LocatorReader INSTANCE = new LocatorReader();
 
     private LocatorReader() {
+        super();
         loadAllLocatorFiles();
     }
 
     public static String get(String key) {
-        String value = properties.getProperty(key);
+        Properties scoped = scopedProperties.get();
+
+        if (scoped != null && !scoped.isEmpty()) {
+            String scopedValue = scoped.getProperty(key);
+
+            if (scopedValue == null || scopedValue.trim().isEmpty()) {
+                logger.error(
+                        "[LOCATOR-READER] Locator key not found in scoped file | key: {} | file: {}",
+                        key,
+                        scopedFile.get()
+                );
+
+                throw new RuntimeException(
+                        "Clé locator introuvable dans le fichier sélectionné : "
+                                + key
+                                + " | fichier : "
+                                + scopedFile.get()
+                );
+            }
+
+            logger.debug(
+                    "[LOCATOR-READER] Scoped locator found | key: {} | value: {} | file: {}",
+                    key,
+                    scopedValue,
+                    scopedFile.get()
+            );
+
+            return scopedValue.trim();
+        }
+
+        String value = INSTANCE.properties.getProperty(key);
 
         if (value == null || value.trim().isEmpty()) {
-            logger.error("[LOCATOR-READER] Locator key not found: {}", key);
+            logger.error("[LOCATOR-READER] Locator key not found globally: {}", key);
             throw new RuntimeException("Clé locator introuvable : " + key);
         }
 
         logger.debug(
-                "[LOCATOR-READER] Locator found | key: {} | value: {}",
+                "[LOCATOR-READER] Global locator found | key: {} | value: {}",
                 key,
                 value
         );
@@ -51,9 +82,93 @@ public class LocatorReader {
         return Integer.parseInt(get(key));
     }
 
+    public static boolean containsKey(String key) {
+        Properties scoped = scopedProperties.get();
+
+        if (scoped != null && !scoped.isEmpty()) {
+            return scoped.containsKey(key);
+        }
+
+        return INSTANCE.properties.containsKey(key);
+    }
+
+    public static Path getFileOfKey(String key) {
+        Properties scoped = scopedProperties.get();
+
+        if (scoped != null && scoped.containsKey(key)) {
+            return scopedFile.get();
+        }
+
+        return keyFileMap.get(key);
+    }
+
     public static void reload() {
         logger.info("[LOCATOR-READER] Reloading all locator files");
         INSTANCE.loadAllLocatorFiles();
+    }
+
+    public static void useLocatorFile(String fileName) {
+        useLocatorFile(fileName, null);
+    }
+
+    public static void useLocatorFile(String fileName, String folderName) {
+        try {
+            Path locatorPath = buildLocatorPath(fileName, folderName);
+
+            if (!Files.exists(locatorPath)) {
+                logger.error("[LOCATOR-READER] Scoped locator file not found: {}", locatorPath);
+                throw new RuntimeException("Locator file not found: " + locatorPath);
+            }
+
+            Properties scoped = new Properties();
+
+            try (InputStream inputStream = Files.newInputStream(locatorPath)) {
+                scoped.load(inputStream);
+            }
+
+            scopedProperties.set(scoped);
+            scopedFile.set(locatorPath);
+
+            logger.info(
+                    "[LOCATOR-READER] Scoped locator file loaded | path: {} | keys: {}",
+                    locatorPath,
+                    scoped.size()
+            );
+
+        } catch (Exception e) {
+            logger.error(
+                    "[LOCATOR-READER] Failed to load scoped locator file | file: {} | folder: {}",
+                    fileName,
+                    folderName,
+                    e
+            );
+
+            throw new RuntimeException(
+                    "Erreur lors du chargement du fichier locator : " + fileName,
+                    e
+            );
+        }
+    }
+
+    public static void clearLocatorScope() {
+        scopedProperties.remove();
+        scopedFile.remove();
+
+        logger.info("[LOCATOR-READER] Scoped locator file cleared");
+    }
+
+    private static Path buildLocatorPath(String fileName, String folderName) {
+        String normalizedFileName = fileName.endsWith(".properties")
+                ? fileName
+                : fileName + ".properties";
+
+        if (folderName == null || folderName.trim().isEmpty()) {
+            return LOCATORS_DIR.resolve(normalizedFileName);
+        }
+
+        return LOCATORS_DIR
+                .resolve(folderName)
+                .resolve(normalizedFileName);
     }
 
     private void loadAllLocatorFiles() {
@@ -81,7 +196,7 @@ public class LocatorReader {
             }
 
             logger.info(
-                    "[LOCATOR-READER] Locator loading completed. Files: {}, Keys: {}",
+                    "[LOCATOR-READER] Locator loading completed | files: {} | keys: {}",
                     files.size(),
                     properties.size()
             );
@@ -107,7 +222,7 @@ public class LocatorReader {
 
                 if (!trimmedLine.contains("=")) {
                     logger.warn(
-                            "[LOCATOR-READER] Invalid line ignored in file {}: {}",
+                            "[LOCATOR-READER] Invalid line ignored | file: {} | line: {}",
                             file,
                             line
                     );
@@ -119,7 +234,7 @@ public class LocatorReader {
 
                 if (key.isEmpty() || value.isEmpty()) {
                     logger.warn(
-                            "[LOCATOR-READER] Empty key/value ignored in file {}: {}",
+                            "[LOCATOR-READER] Empty key/value ignored | file: {} | line: {}",
                             file,
                             line
                     );
@@ -130,14 +245,15 @@ public class LocatorReader {
                     Path existingFile = keyFileMap.get(key);
 
                     logger.error(
-                            "[LOCATOR-READER] Duplicate locator key detected: {} | first file: {} | second file: {}",
+                            "[LOCATOR-READER] Duplicate locator key detected | key: {} | first file: {} | second file: {}",
                             key,
                             existingFile,
                             file
                     );
 
                     throw new RuntimeException(
-                            "Clé locator dupliquée : " + key
+                            "Clé locator dupliquée : "
+                                    + key
                                     + " dans les fichiers : "
                                     + existingFile
                                     + " et "
@@ -163,11 +279,19 @@ public class LocatorReader {
 
     public static void updatePrimaryLocator(String elementName, String newPrimaryLocator) {
         try {
+            if (elementName == null || elementName.trim().isEmpty()) {
+                throw new RuntimeException("Le nom de l'élément est vide");
+            }
+
             if (newPrimaryLocator == null || newPrimaryLocator.trim().isEmpty()) {
                 throw new RuntimeException("Le nouveau locator est vide pour : " + elementName);
             }
 
-            Path targetFile = keyFileMap.get(elementName);
+            Path targetFile = scopedFile.get();
+
+            if (targetFile == null) {
+                targetFile = keyFileMap.get(elementName);
+            }
 
             if (targetFile == null) {
                 throw new RuntimeException(
@@ -228,7 +352,7 @@ public class LocatorReader {
 
             if (!updated) {
                 throw new RuntimeException(
-                        "La clé existe en mémoire mais la ligne est introuvable dans le fichier : "
+                        "La clé est introuvable dans le fichier cible : "
                                 + elementName
                                 + " | fichier : "
                                 + targetFile
@@ -244,6 +368,10 @@ public class LocatorReader {
 
             reload();
 
+            if (scopedFile.get() != null) {
+                reloadScopedFileAfterUpdate(targetFile);
+            }
+
         } catch (Exception e) {
             logger.error(
                     "[LOCATOR-READER] Failed to update primary locator for element: {}",
@@ -258,11 +386,34 @@ public class LocatorReader {
         }
     }
 
-    public static boolean containsKey(String key) {
-        return properties.containsKey(key);
-    }
+    private static void reloadScopedFileAfterUpdate(Path targetFile) {
+        try {
+            Properties scoped = new Properties();
 
-    public static Path getFileOfKey(String key) {
-        return keyFileMap.get(key);
+            try (InputStream inputStream = Files.newInputStream(targetFile)) {
+                scoped.load(inputStream);
+            }
+
+            scopedProperties.set(scoped);
+            scopedFile.set(targetFile);
+
+            logger.info(
+                    "[LOCATOR-READER] Scoped locator file reloaded after update | file: {} | keys: {}",
+                    targetFile,
+                    scoped.size()
+            );
+
+        } catch (Exception e) {
+            logger.error(
+                    "[LOCATOR-READER] Failed to reload scoped locator file after update: {}",
+                    targetFile,
+                    e
+            );
+
+            throw new RuntimeException(
+                    "Erreur lors du rechargement du fichier scoped locator : " + targetFile,
+                    e
+            );
+        }
     }
 }

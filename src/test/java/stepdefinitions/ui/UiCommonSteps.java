@@ -13,14 +13,14 @@ public class UiCommonSteps extends BaseSteps {
         actions().login();
     }
 
-    @And("search locators in the (.+)$")
-    public void search_locators_in_the(String fileName) {
+    @And("^search locators in the (\\S+)$")
+    public void search_locators_in_the_file_without_word_file(String fileName) {
         actions().searchLocatorsInFile(fileName);
     }
 
-    @And("search locators in the (.+) file of common folder$")
-    public void search_locators_in_the_file_of_common_folder(String fileName) {
-        actions().searchLocatorsInFile(fileName);
+    @And("search locators in the (\\S+) file of (\\S+) folder$")
+    public void search_locators_in_the_file_of_folder(String fileName, String folderName) {
+        actions().searchLocatorsInFile(fileName, folderName);
     }
 
     @When("switch to frame (\\d+)$")
