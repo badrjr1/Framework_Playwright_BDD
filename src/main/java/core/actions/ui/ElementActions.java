@@ -7,6 +7,7 @@ import com.microsoft.playwright.options.SelectOption;
 import config.ConfigReader;
 import config.LocatorReader;
 import core.context.TestContext;
+import core.data.DynamicValueResolver;
 import core.heal.SelfHealingEngine;
 import core.heal.dto.ResolvedLocator;
 import core.wait.WaitUtils;
@@ -963,41 +964,7 @@ public class ElementActions implements IElementActions {
     }
 
     private String resolveDynamicValue(String value) {
-        if (value == null) {
-            return null;
-        }
-
-        String result = value;
-
-        while (result.contains("${")) {
-            int start = result.indexOf("${");
-            int end = result.indexOf("}", start);
-
-            if (end == -1) {
-                logger.warn("[CONTEXT] Invalid dynamic variable syntax in value: {}", value);
-                break;
-            }
-
-            String variableName = result.substring(start + 2, end);
-            String variableValue = TestContext.getString(variableName);
-
-            if (variableValue == null) {
-                logger.error("[CONTEXT] Variable not found in TestContext: {}", variableName);
-                throw new RuntimeException("Variable not found in TestContext: " + variableName);
-            }
-
-            logger.debug(
-                    "[CONTEXT] Dynamic variable resolved | variable: {} | value: {}",
-                    variableName,
-                    variableValue
-            );
-
-            result = result.substring(0, start)
-                    + variableValue
-                    + result.substring(end + 1);
-        }
-
-        return result;
+        return DynamicValueResolver.resolve(value);
     }
 
     @Override
@@ -1248,14 +1215,13 @@ public class ElementActions implements IElementActions {
                 logger.info("[UI] Write value of key started | key: {} | element: {}",
                         cleanKey, elementName);
 
-                String value = ConfigReader.get(cleanKey);
+                String value = resolveDynamicValue(ConfigReader.get(cleanKey));
 
                 if (value == null || value.isBlank()) {
                     throw new RuntimeException("No value found in config for key: " + cleanKey);
                 }
 
-                logger.info("[UI] Key resolved successfully | key: {} | value: {}",
-                        cleanKey, value);
+                logger.info("[UI] Key resolved successfully | key: {} | value: {}", cleanKey, value);
 
                 write(elementName, value);
 

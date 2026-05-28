@@ -1,0 +1,180 @@
+pipeline {
+    agent any
+
+    tools {
+        jdk 'JDK17'
+        maven 'Maven 3'
+    }
+
+    options {
+        timestamps()
+        ansiColor('xterm')
+        buildDiscarder(logRotator(numToKeepStr: '10'))
+        disableConcurrentBuilds()
+        timeout(time: 60, unit: 'MINUTES')
+    }
+
+    parameters {
+        choice(
+            name: 'ENV',
+            choices: ['ci', 'local'],
+            description: 'Environment configuration file: config-ci.properties or config-local.properties'
+        )
+
+        choice(
+            name: 'BROWSER',
+            choices: ['chromium', 'firefox', 'webkit'],
+            description: 'Browser used by Playwright'
+        )
+
+        string(
+            name: 'CUCUMBER_TAGS',
+            defaultValue: '@ui',
+            description: 'Cucumber tags to execute. Example: @ui, @api, @hybrid, @websocket'
+        )
+
+        choice(
+            name: 'FRAMEWORK_LOG_LEVEL',
+            choices: ['INFO', 'DEBUG', 'WARN', 'ERROR'],
+            description: 'Framework log level'
+        )
+    }
+
+    environment {
+        MAVEN_OPTS = '-Xmx1024m'
+        ALLURE_RESULTS = 'target/allure-results'
+        ALLURE_REPORT = 'allure-report'
+    }
+
+    stages {
+
+        stage('Checkout') {
+            steps {
+                echo 'Checking out source code...'
+                checkout scm
+            }
+        }
+
+        stage('Prepare Workspace') {
+            steps {
+                echo 'Preparing workspace...'
+
+                sh '''
+                    mkdir -p target/logs
+                    mkdir -p target/videos
+                    mkdir -p target/allure-results
+                '''
+            }
+        }
+
+        stage('Verify Tools') {
+            steps {
+                echo 'Verifying Java, Maven and Allure...'
+
+                sh '''
+                    java -version
+                    mvn -version
+                    allure --version || true
+                '''
+            }
+        }
+
+        stage('Install Playwright Browsers') {
+            steps {
+                echo "Installing Playwright browser: ${params.BROWSER}"
+
+                sh """
+                    mvn -q exec:java \
+                      -Dexec.mainClass=com.microsoft.playwright.CLI \
+                      -Dexec.args="install ${params.BROWSER}"
+                """
+            }
+        }
+
+        stage('Run Tests') {
+            steps {
+                echo "Running tests with ENV=${params.ENV}, BROWSER=${params.BROWSER}, TAGS=${params.CUCUMBER_TAGS}"
+
+                sh """
+                    mvn clean test \
+                      -Denv=${params.ENV} \
+                      -Dbrowser.name=${params.BROWSER} \
+                      -Dframework.log.level=${params.FRAMEWORK_LOG_LEVEL} \
+                      -Dlibrary.log.level=WARN \
+                      -Dcucumber.filter.tags="${params.CUCUMBER_TAGS}"
+                """
+            }
+            post {
+                always {
+                    echo 'Test execution finished.'
+                }
+            }
+        }
+
+        stage('Prepare Allure History') {
+            steps {
+                echo 'Preparing Allure history for trend...'
+
+                sh '''
+                    if [ -d "${ALLURE_REPORT}/history" ]; then
+                        echo "Copying previous Allure history..."
+                        mkdir -p "${ALLURE_RESULTS}/history"
+                        cp -r "${ALLURE_REPORT}/history/"* "${ALLURE_RESULTS}/history/" || true
+                    else
+                        echo "No previous Allure history found."
+                    fi
+                '''
+            }
+        }
+
+        stage('Generate Allure Report') {
+            steps {
+                echo 'Generating Allure report...'
+
+                sh '''
+                    allure generate "${ALLURE_RESULTS}" --clean -o "${ALLURE_REPORT}" || true
+                '''
+            }
+        }
+    }
+
+    post {
+
+        always {
+            echo 'Publishing test reports and archiving artifacts...'
+
+            junit allowEmptyResults: true, testResults: 'target/surefire-reports/*.xml'
+
+            archiveArtifacts artifacts: '''
+                target/allure-results/**,
+                allure-report/**,
+                target/logs/**,
+                target/videos/**,
+                target/screenshots/**
+            ''', allowEmptyArchive: true
+
+            allure([
+                includeProperties: false,
+                jdk: '',
+                reportBuildPolicy: 'ALWAYS',
+                results: [[path: 'target/allure-results']]
+            ])
+        }
+
+        success {
+            echo 'Pipeline completed successfully.'
+        }
+
+        unstable {
+            echo 'Pipeline completed with unstable test results.'
+        }
+
+        failure {
+            echo 'Pipeline failed.'
+        }
+
+        cleanup {
+            echo 'Cleaning temporary files if needed...'
+        }
+    }
+}
