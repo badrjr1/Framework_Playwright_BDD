@@ -385,7 +385,7 @@ public class ElementActions implements IElementActions {
     }
 
     @Override
-    public void searchLocatorsInFile(String fileName) {
+    public void searchLocatorsInFileOfFolder(String fileName) {
         Allure.step("Search locators in file: " + fileName, () -> {
             try {
                 logger.info("[LOCATOR] Selecting locator file | file: {}", fileName);
@@ -417,7 +417,7 @@ public class ElementActions implements IElementActions {
     }
 
     @Override
-    public void searchLocatorsInFile(String fileName, String folderName) {
+    public void searchLocatorsInFileOfFolder(String fileName, String folderName) {
         Allure.step("Search locators in file: " + fileName + " of folder: " + folderName, () -> {
             try {
                 logger.info(

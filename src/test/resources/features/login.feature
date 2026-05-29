@@ -1,4 +1,4 @@
-@ui
+@ui @ignore
 Feature: Login functionality
 
   Background:

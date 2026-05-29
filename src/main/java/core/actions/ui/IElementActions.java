@@ -2,8 +2,8 @@ package core.actions.ui;
 
 public interface IElementActions {
     void login();
-    void searchLocatorsInFile(String fileName);
-    void searchLocatorsInFile(String fileName, String folderName);
+    void searchLocatorsInFileOfFolder(String fileName);
+    void searchLocatorsInFileOfFolder(String fileName, String folderName);
     void click(String elementName);
     void write(String elementName, String value);
     void saveElementValue(String elementName, String variableName);
