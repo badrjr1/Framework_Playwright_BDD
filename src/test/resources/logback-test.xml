@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+
+    <!-- Console appender -->
+    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%d{HH:mm:ss.SSS} %-5level [%thread] %logger{45} - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <!-- Niveau global de ton framework -->
+    <property name="FRAMEWORK_LOG_LEVEL" value="DEBUG"/>
+
+    <!-- Packages du framework -->
+    <logger name="hooks" level="${FRAMEWORK_LOG_LEVEL}"/>
+    <logger name="runners" level="${FRAMEWORK_LOG_LEVEL}"/>
+    <logger name="stepdefinitions" level="${FRAMEWORK_LOG_LEVEL}"/>
+    <logger name="pages" level="${FRAMEWORK_LOG_LEVEL}"/>
+    <logger name="core" level="${FRAMEWORK_LOG_LEVEL}"/>
+    <logger name="config" level="${FRAMEWORK_LOG_LEVEL}"/>
+
+    <!-- Si tu as un package séparé heal -->
+    <logger name="heal" level="${FRAMEWORK_LOG_LEVEL}"/>
+
+    <!-- Niveau global des librairies externes -->
+    <property name="LIBRARY_LOG_LEVEL" value="WARN"/>
+    <!-- Réduire le bruit des librairies librairie -->
+    <logger name="com.microsoft.playwright" level="${LIBRARY_LOG_LEVEL}"/>
+    <logger name="io.cucumber" level="${LIBRARY_LOG_LEVEL}"/>
+    <logger name="org.junit" level="${LIBRARY_LOG_LEVEL}"/>
+    <logger name="org.apache" level="${LIBRARY_LOG_LEVEL}"/>
+    <logger name="com.fasterxml.jackson" level="${LIBRARY_LOG_LEVEL}"/>
+    <logger name="io.qameta.allure" level="${LIBRARY_LOG_LEVEL}"/>
+
+    <!-- Niveau par défaut -->
+    <root level="WARN">
+        <appender-ref ref="STDOUT"/>
+    </root>
+
+</configuration>
