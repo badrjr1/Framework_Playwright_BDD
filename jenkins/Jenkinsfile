@@ -9,16 +9,16 @@ pipeline {
     options {
         timestamps()
         ansiColor('xterm')
-        buildDiscarder(logRotator(numToKeepStr: '10'))
+        buildDiscarder(logRotator(numToKeepStr: '15', artifactNumToKeepStr: '10'))
         disableConcurrentBuilds()
-        timeout(time: 60, unit: 'MINUTES')
+        timeout(time: 120, unit: 'MINUTES')
     }
 
     parameters {
         choice(
             name: 'ENV',
-            choices: ['ci', 'local'],
-            description: 'Environment configuration file: config-ci.properties or config-local.properties'
+            choices: ['local'],
+            description: 'Environment configuration: config-local.properties'
         )
 
         choice(
@@ -30,70 +30,121 @@ pipeline {
         string(
             name: 'CUCUMBER_TAGS',
             defaultValue: '@ui',
-            description: 'Cucumber tags to execute. Example: @ui, @api, @hybrid, @websocket'
+            description: 'Cucumber tags to execute. Examples: @ui, @api, @hybrid, @websocket, @ui && @smoke'
         )
 
         choice(
             name: 'FRAMEWORK_LOG_LEVEL',
-            choices: ['INFO', 'DEBUG', 'WARN', 'ERROR'],
+            choices: ['DEBUG', 'INFO', 'WARN', 'ERROR'],
             description: 'Framework log level'
+        )
+
+        booleanParam(
+            name: 'GENERATE_ALLURE_REPORT',
+            defaultValue: true,
+            description: 'Generate and publish Allure report'
+        )
+
+        booleanParam(
+            name: 'RETRY_FAILED_TESTS',
+            defaultValue: false,
+            description: 'Retry failed tests automatically'
         )
     }
 
     environment {
-        MAVEN_OPTS = '-Xmx1024m'
+        MAVEN_OPTS = '-Xmx2048m'
+        JAVA_TOOL_OPTIONS = '-Dfile.encoding=UTF-8'
         ALLURE_RESULTS = 'target/allure-results'
         ALLURE_REPORT = 'allure-report'
+        BUILD_TIMESTAMP = sh(script: 'date +%Y%m%d_%H%M%S', returnStdout: true).trim()
     }
 
     stages {
 
-        stage('Checkout') {
+        stage('📋 Checkout') {
             steps {
-                echo 'Checking out source code...'
+                script {
+                    echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+                    echo '📋 Checking out source code...'
+                    echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+                }
                 checkout scm
             }
         }
 
-        stage('Prepare Workspace') {
+        stage('🔧 Prepare Workspace') {
             steps {
-                echo 'Preparing workspace...'
+                script {
+                    echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+                    echo '🔧 Preparing workspace directories...'
+                    echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+                }
 
                 sh '''
                     mkdir -p target/logs
                     mkdir -p target/videos
+                    mkdir -p target/screenshots
                     mkdir -p target/allure-results
+                    mkdir -p test-reports
+
+                    echo "✅ Workspace ready"
                 '''
             }
         }
 
-        stage('Verify Tools') {
+        stage('✅ Verify Tools') {
             steps {
-                echo 'Verifying Java, Maven and Allure...'
+                script {
+                    echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+                    echo '✅ Verifying build environment...'
+                    echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+                }
 
                 sh '''
+                    echo "Java version:"
                     java -version
+
+                    echo ""
+                    echo "Maven version:"
                     mvn -version
-                    allure --version || true
+
+                    echo ""
+                    echo "Allure version:"
+                    allure --version || echo "⚠️  Allure not found in PATH"
                 '''
             }
         }
 
-        stage('Install Playwright Browsers') {
+        stage('🎮 Install Playwright Browsers') {
             steps {
-                echo "Installing Playwright browser: ${params.BROWSER}"
+                script {
+                    echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+                    echo "🎮 Installing Playwright browser: ${params.BROWSER}"
+                    echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+                }
 
                 sh """
                     mvn -q exec:java \
                       -Dexec.mainClass=com.microsoft.playwright.CLI \
                       -Dexec.args="install ${params.BROWSER}"
+
+                    echo "✅ Browser ${params.BROWSER} installed"
                 """
             }
         }
 
-        stage('Run Tests') {
+        stage('🧪 Run Tests') {
             steps {
-                echo "Running tests with ENV=${params.ENV}, BROWSER=${params.BROWSER}, TAGS=${params.CUCUMBER_TAGS}"
+                script {
+                    echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+                    echo "🧪 Executing tests..."
+                    echo "   Environment: ${params.ENV}"
+                    echo "   Browser: ${params.BROWSER}"
+                    echo "   Tags: ${params.CUCUMBER_TAGS}"
+                    echo "   Log Level: ${params.FRAMEWORK_LOG_LEVEL}"
+                    echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+                }
 
                 sh """
                     mvn clean test \
@@ -101,38 +152,66 @@ pipeline {
                       -Dbrowser.name=${params.BROWSER} \
                       -Dframework.log.level=${params.FRAMEWORK_LOG_LEVEL} \
                       -Dlibrary.log.level=WARN \
-                      -Dcucumber.filter.tags="${params.CUCUMBER_TAGS}"
+                      -Dcucumber.filter.tags="${params.CUCUMBER_TAGS}" \
+                      --batch-mode \
+                      --show-version \
+                      -Dorg.slf4j.simpleLogger.defaultLogLevel=INFO
                 """
             }
             post {
                 always {
-                    echo 'Test execution finished.'
+                    echo '✅ Test execution completed'
+                }
+                unstable {
+                    echo '⚠️  Some tests failed'
+                }
+                failure {
+                    echo '❌ Test execution failed'
                 }
             }
         }
 
-        stage('Prepare Allure History') {
+        stage('📊 Prepare Allure Report') {
+            when {
+                expression { params.GENERATE_ALLURE_REPORT }
+            }
             steps {
-                echo 'Preparing Allure history for trend...'
+                script {
+                    echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+                    echo '📊 Preparing Allure report with history...'
+                    echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+                }
 
                 sh '''
                     if [ -d "${ALLURE_REPORT}/history" ]; then
-                        echo "Copying previous Allure history..."
+                        echo "📂 Copying previous Allure history..."
                         mkdir -p "${ALLURE_RESULTS}/history"
                         cp -r "${ALLURE_REPORT}/history/"* "${ALLURE_RESULTS}/history/" || true
                     else
-                        echo "No previous Allure history found."
+                        echo "ℹ️  No previous Allure history found - first run"
                     fi
                 '''
             }
         }
 
-        stage('Generate Allure Report') {
+        stage('📈 Generate Allure Report') {
+            when {
+                expression { params.GENERATE_ALLURE_REPORT }
+            }
             steps {
-                echo 'Generating Allure report...'
+                script {
+                    echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+                    echo '📈 Generating Allure report...'
+                    echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+                }
 
                 sh '''
-                    allure generate "${ALLURE_RESULTS}" --clean -o "${ALLURE_REPORT}" || true
+                    if command -v allure &> /dev/null; then
+                        allure generate "${ALLURE_RESULTS}" --clean -o "${ALLURE_REPORT}"
+                        echo "✅ Allure report generated successfully"
+                    else
+                        echo "⚠️  Allure CLI not found - skipping report generation"
+                    fi
                 '''
             }
         }
@@ -141,40 +220,69 @@ pipeline {
     post {
 
         always {
-            echo 'Publishing test reports and archiving artifacts...'
+            script {
+                echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+                echo '📦 Publishing reports and archiving artifacts...'
+                echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+            }
 
-            junit allowEmptyResults: true, testResults: 'target/surefire-reports/*.xml'
+            // Publish JUnit test results
+            junit allowEmptyResults: true, testResults: 'target/surefire-reports/**/*.xml'
 
+            // Archive artifacts
             archiveArtifacts artifacts: '''
                 target/allure-results/**,
                 allure-report/**,
                 target/logs/**,
                 target/videos/**,
-                target/screenshots/**
-            ''', allowEmptyArchive: true
+                target/screenshots/**,
+                test-reports/**
+            ''', allowEmptyArchive: true, fingerprint: true
 
+            // Publish Allure report
             allure([
                 includeProperties: false,
                 jdk: '',
                 reportBuildPolicy: 'ALWAYS',
                 results: [[path: 'target/allure-results']]
             ])
+
+            // Clean workspace
+            cleanWs(
+                deleteDirs: true,
+                patterns: [
+                    [pattern: 'target/test-classes/**', type: 'INCLUDE'],
+                    [pattern: '**/node_modules/**', type: 'INCLUDE']
+                ]
+            )
         }
 
         success {
-            echo 'Pipeline completed successfully.'
+            script {
+                echo '✅ Pipeline completed successfully!'
+                echo "Build #${env.BUILD_NUMBER} succeeded"
+            }
         }
 
         unstable {
-            echo 'Pipeline completed with unstable test results.'
+            script {
+                echo '⚠️  Pipeline completed with unstable test results'
+                echo "Build #${env.BUILD_NUMBER} unstable"
+            }
         }
 
         failure {
-            echo 'Pipeline failed.'
+            script {
+                echo '❌ Pipeline failed!'
+                echo "Build #${env.BUILD_NUMBER} failed"
+                echo "Please check the logs for details"
+            }
         }
 
         cleanup {
-            echo 'Cleaning temporary files if needed...'
+            script {
+                echo '🧹 Cleanup completed'
+            }
         }
     }
 }
