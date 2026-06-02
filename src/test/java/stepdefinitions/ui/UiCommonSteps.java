@@ -13,7 +13,7 @@ public class UiCommonSteps extends BaseSteps {
         actions().login();
     }
 
-    @And("^search locators in the (\\S+)$")
+    @And("^search locators in the (\\S+) file$")
     public void search_locators_in_the_file_without_word_file(String fileName) {
         actions().searchLocatorsInFileOfFolder(fileName);
     }
@@ -93,14 +93,14 @@ public class UiCommonSteps extends BaseSteps {
         actions().assertElementContains(elementName, expectedValue);
     }
 
-    @Then("^assert value of that element (.+) contains (.+)$")
+    @Then("assert value of that element (.+) contains (.+)$")
     public void assert_value_of_that_element_contains(String elementName, String expectedValue) {
-
-        if (elementName.equalsIgnoreCase("lnk_current_url")) {
-            actions().assertUrlContains(expectedValue);
-        } else {
             actions().assertElementValueContains(elementName, expectedValue);
-        }
+    }
+
+    @Then("assert value of that link (.+) contains (.+)$")
+    public void assert_value_of_that_link_contains(String elementName, String expectedValue) {
+            actions().assertUrlContains(expectedValue);
     }
 
     @Then("assert that (.+) is selected in dropdown (.+)$")
