@@ -17,12 +17,6 @@ pipeline {
 
         string(
             name: 'CUCUMBER_TAGS',
-            defaultValue: ['@ui', '@api' , '@ws' ,'@hybrid'],
-            description: 'Cucumber tags to execute'
-        )
-
-        string(
-            name: 'CUCUMBER_TAGS',
             defaultValue: '',
             description: 'Optional Cucumber tag. Empty = run all scenarios except @ignore. Example: @ui, @api, @ws, @hybrid, @ui or @api'
         )
@@ -140,7 +134,8 @@ pipeline {
                 target/allure-results/**,
                 allure-report/**,
                 target/logs/**,
-                target/videos/**
+                target/videos/**,
+                target/screenshots/**
             ''', allowEmptyArchive: true
 
             allure([
