@@ -116,6 +116,70 @@ pipeline {
             }
         }
 
+        stage('🔐 Install System Dependencies') {
+            steps {
+                script {
+                    echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+                    echo '🔐 Installing system dependencies required by Playwright...'
+                    echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+                }
+
+                sh '''
+                    # Detect package manager and install needed libs for Playwright
+                    if command -v apt-get &> /dev/null; then
+                        sudo apt-get update -y
+                        sudo apt-get install -y \
+                          libglib2.0-0 \
+                          libnss3 \
+                          libnspr4 \
+                          libdbus-1-3 \
+                          libatk1.0-0 \
+                          libatk-bridge2.0-0 \
+                          libcups2 \
+                          libdrm2 \
+                          libxcb1 \
+                          libxkbcommon0 \
+                          libatspi2.0-0 \
+                          libx11-6 \
+                          libxcomposite1 \
+                          libxdamage1 \
+                          libxext6 \
+                          libxfixes3 \
+                          libxrandr2 \
+                          libgbm1 \
+                          libpango-1.0-0 \
+                          libcairo2 \
+                          libasound2 || true
+                    elif command -v yum &> /dev/null; then
+                        sudo yum install -y \
+                          alsa-lib \
+                          atk \
+                          at-spi2-atk \
+                          cairo \
+                          dbus-glib \
+                          GConf2 \
+                          glib2 \
+                          gtk3 \
+                          libX11 \
+                          libXcomposite \
+                          libXcursor \
+                          libXdamage \
+                          libXext \
+                          libXi \
+                          libXrandr \
+                          libXss \
+                          libXtst \
+                          mesa-libgbm \
+                          nss \
+                          nspr || true
+                    else
+                        echo "No known package manager found. Trying Playwright installer (maven)..."
+                        sudo mvn exec:java -e -Dexec.mainClass=com.microsoft.playwright.CLI -Dexec.args="install-deps" || true
+                    fi
+                '''
+            }
+        }
+
         stage('🎮 Install Playwright Browsers') {
             steps {
                 script {
