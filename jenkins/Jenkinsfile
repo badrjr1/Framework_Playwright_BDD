@@ -1,9 +1,10 @@
 pipeline {
-    agent any
-
-    tools {
-        jdk 'JDK17'
-        maven 'Maven 3'
+    agent {
+        docker {
+            // Image built from Jenkinsfile/docker/Dockerfile (name example below)
+            image 'framework-playwright/playwright-java-maven:latest'
+            args '--shm-size=1g -v /var/jenkins_playwright_cache:/home/jenkins/.cache/ms-playwright'
+        }
     }
 
     options {
