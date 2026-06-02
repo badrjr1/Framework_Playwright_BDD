@@ -23,7 +23,8 @@ pipeline {
 
         string(
             name: 'CUCUMBER_TAGS',
-            choice: ['','@ui', '@api' , '@ws' ,'@hybrid'],
+            defaultValue: '',
+//            choice: ['','@ui', '@api' , '@ws' ,'@hybrid'],
             description: 'Optional Cucumber tag. Empty = run all scenarios except @ignore. Example: @ui, @api, @websocket, @ui or @api'
         )
 
