@@ -29,6 +29,17 @@ public class AiHealingStrategy {
     }
 
     public HealingResult heal(String elementName, LocatorDefinition failedLocator) {
+
+        if (aiClient == null) {
+            logger.warn(
+                    "[AI-HEALING] AI healing skipped for element: {} because no AI client is configured",
+                    elementName
+            );
+
+            return new HealingResult(false, elementName, List.of(), "AI");
+        }
+
+
         logger.info("[AI-HEALING] Start AI healing for element: {}", elementName);
 
         try {

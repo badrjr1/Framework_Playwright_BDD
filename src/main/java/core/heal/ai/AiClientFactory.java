@@ -46,11 +46,8 @@ public class AiClientFactory {
             );
         }
 
-        logger.error("[AI-FACTORY] No AI API key found in config.properties.");
-
-        throw new RuntimeException(
-                "Aucune clé IA trouvée. Remplir au moins une clé : OPENAI_API_KEY, GEMINI_API_KEY ou CLAUDE_API_KEY"
-        );
+        logger.warn("[AI-FACTORY] No AI API key found. AI healing will be skipped.");
+        return null;
     }
 
     private static String getOptional(String key) {
