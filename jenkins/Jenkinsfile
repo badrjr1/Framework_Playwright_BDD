@@ -10,12 +10,6 @@ pipeline {
 
     parameters {
         choice(
-            name: 'ENV',
-            choices: ['ci', 'local'],
-            description: 'Environment configuration'
-        )
-
-        choice(
             name: 'BROWSER',
             choices: ['chromium'],
             description: 'Browser used by Playwright'
@@ -23,8 +17,14 @@ pipeline {
 
         string(
             name: 'CUCUMBER_TAGS',
-            defaultValue: '@ui',
+            defaultValue: ['@ui', '@api' , '@ws' ,'@hybrid'],
             description: 'Cucumber tags to execute'
+        )
+
+        string(
+            name: 'CUCUMBER_TAGS',
+            choice: ['','@ui', '@api' , '@ws' ,'@hybrid'],
+            description: 'Optional Cucumber tag. Empty = run all scenarios except @ignore. Example: @ui, @api, @websocket, @ui or @api'
         )
 
         choice(
@@ -84,14 +84,27 @@ pipeline {
 
         stage('Run Tests') {
             steps {
-                sh """
-                    mvn clean test \
-                      -Denv=${params.ENV} \
-                      -Dbrowser.name=${params.BROWSER} \
-                      -Dframework.log.level=${params.FRAMEWORK_LOG_LEVEL} \
-                      -Dlibrary.log.level=WARN \
-                      -Dcucumber.filter.tags="${params.CUCUMBER_TAGS}"
-                """
+                script {
+                    def userTags = params.CUCUMBER_TAGS?.trim()
+                    def finalTags = ''
+
+                    if (userTags == null || userTags == '') {
+                        finalTags = 'not @ignore'
+                    } else {
+                        finalTags = "(${userTags}) and not @ignore"
+                    }
+
+                    echo "Final Cucumber tags: ${finalTags}"
+
+                    sh """
+                        mvn clean test \
+                          -Denv=${params.ENV} \
+                          -Dbrowser.name=${params.BROWSER} \
+                          -Dframework.log.level=${params.FRAMEWORK_LOG_LEVEL} \
+                          -Dlibrary.log.level=WARN \
+                          -Dcucumber.filter.tags="${finalTags}"
+                    """
+                }
             }
         }
 
