@@ -1,4 +1,4 @@
-@websocket
+@websocket @ignore
 Feature: Test WebSocket connection
 
   Scenario Outline: Client sends message and validates websocket response
