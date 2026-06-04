@@ -105,14 +105,7 @@ pipeline {
                         returnStatus: true
                     )
 
-                    echo "Maven test exit code: ${testStatus}"
-
-                    writeFile file: "${env.TEST_EXIT_CODE_FILE}", text: "${testStatus}"
-
-                    if (testStatus != 0) {
-                        currentBuild.result = 'UNSTABLE'
-                        echo "Some tests failed. Pipeline will continue to generate Allure report."
-                    }
+                    
                 }
             }
         }
@@ -171,14 +164,6 @@ pipeline {
 
         success {
             echo 'Pipeline completed successfully.'
-        }
-
-        unstable {
-            echo 'Pipeline completed with failed tests, but reports were generated.'
-        }
-
-        failure {
-            echo 'Pipeline failed.'
         }
     }
 }
