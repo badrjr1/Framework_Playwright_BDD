@@ -190,14 +190,7 @@ pipeline {
                     long durationSeconds = ((durationMillis ?: 0) as long).intdiv(1000)
                     def durationText = "${durationSeconds}s"
 
-                    def suiteStats = [:].withDefault {
-                        [
-                            total : 0,
-                            passed: 0,
-                            failed: 0,
-                            flaky: 0
-                        ]
-                    }
+                    def suiteStats = [:]
 
                     int flakyTests = 0
 
@@ -216,6 +209,15 @@ pipeline {
 
                             def suiteName = suiteLabel ?: featureLabel ?: 'Default Suite'
                             def status = testCase.status ?: 'unknown'
+
+                            if (!suiteStats.containsKey(suiteName)) {
+                                suiteStats[suiteName] = [
+                                    total : 0,
+                                    passed: 0,
+                                    failed: 0,
+                                    flaky: 0
+                                ]
+                            }
 
                             def isFlaky = false
 
