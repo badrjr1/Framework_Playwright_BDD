@@ -150,14 +150,6 @@ pipeline {
                 echo 'Publishing reports and archiving artifacts...'
 
                 catchError(buildResult: 'SUCCESS', stageResult: 'SUCCESS') {
-                    junit(
-                        allowEmptyResults: true,
-                        skipMarkingBuildUnstable: true,
-                        testResults: 'target/surefire-reports/*.xml'
-                    )
-                }
-
-                catchError(buildResult: 'SUCCESS', stageResult: 'SUCCESS') {
                     archiveArtifacts artifacts: '''
                         target/allure-results/**,
                         allure-report/**,
@@ -168,17 +160,6 @@ pipeline {
                     ''', allowEmptyArchive: true
                 }
 
-                catchError(buildResult: 'SUCCESS', stageResult: 'SUCCESS') {
-                    allure([
-                        commandline: 'Allure',
-                        includeProperties: false,
-                        jdk: '',
-                        reportBuildPolicy: 'ALWAYS',
-                        results: [[path: 'target/allure-results']]
-                    ])
-                }
-
-                currentBuild.result = 'SUCCESS'
                 echo 'Pipeline finished as SUCCESS.'
             }
         }
