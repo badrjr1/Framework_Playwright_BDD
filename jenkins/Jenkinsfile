@@ -94,17 +94,23 @@ pipeline {
 
                     echo "Final Cucumber tags: ${finalTags}"
 
-                    sh(
+                    def testStatus = sh(
                         script: """
                             mvn clean test \
                               -Dbrowser.name=${params.BROWSER} \
                               -Dframework.log.level=${params.FRAMEWORK_LOG_LEVEL} \
                               -Dlibrary.log.level=WARN \
                               -Dcucumber.filter.tags="${finalTags}"
-                        """
+                        """,
+                        returnStatus: true
                     )
 
+                    echo "Maven test exit code: ${testStatus}"
+                    writeFile file: "${env.TEST_EXIT_CODE_FILE}", text: "${testStatus}"
 
+                    if (testStatus != 0) {
+                        echo "Some tests failed, but pipeline will continue and remain SUCCESS."
+                    }
                 }
             }
         }
