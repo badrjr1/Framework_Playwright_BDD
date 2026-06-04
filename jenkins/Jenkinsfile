@@ -169,12 +169,7 @@ pipeline {
                     }
 
                     def summary = readJSON file: summaryPath
-                    def statistic = summary.statistic ?: [:]
                     def time = summary.time ?: [:]
-
-                    def totalTests = statistic.total ?: 0
-                    def passedTests = statistic.passed ?: 0
-                    def failedTests = (statistic.failed ?: 0) + (statistic.broken ?: 0)
 
                     def startMillis = time.start ?: 0
                     def stopMillis = time.stop ?: 0
@@ -190,9 +185,12 @@ pipeline {
                     long durationSeconds = ((durationMillis ?: 0) as long).intdiv(1000)
                     def durationText = "${durationSeconds}s"
 
-                    def suiteStats = [:]
-
-                    int flakyTests = 0
+                    /*
+                     * uniqueTests stores one logical scenario only once.
+                     * If the same scenario is executed multiple times because of retry,
+                     * it is grouped using Allure historyId.
+                     */
+                    def uniqueTests = [:]
 
                     def testCaseFiles = sh(
                         script: "find ${env.ALLURE_REPORT}/data/test-cases -name '*.json' 2>/dev/null || true",
@@ -208,39 +206,80 @@ pipeline {
                             def featureLabel = labels.find { it.name == 'feature' }?.value
 
                             def suiteName = suiteLabel ?: featureLabel ?: 'Default Suite'
+                            def testName = testCase.name ?: testCase.fullName ?: filePath
+                            def testKey = testCase.historyId ?: testCase.fullName ?: testName
+
                             def status = testCase.status ?: 'unknown'
+                            long start = ((testCase.time?.start ?: 0) as long)
 
-                            if (!suiteStats.containsKey(suiteName)) {
-                                suiteStats[suiteName] = [
-                                    total : 0,
-                                    passed: 0,
-                                    failed: 0,
-                                    flaky: 0
+                            if (!uniqueTests.containsKey(testKey)) {
+                                uniqueTests[testKey] = [
+                                    name       : testName,
+                                    suite      : suiteName,
+                                    finalStatus: status,
+                                    start      : start,
+                                    executions : [status]
                                 ]
+                            } else {
+                                def existing = uniqueTests[testKey]
+
+                                existing.executions.add(status)
+
+                                /*
+                                 * Keep the latest execution as the final status.
+                                 */
+                                if (start >= ((existing.start ?: 0) as long)) {
+                                    existing.finalStatus = status
+                                    existing.start = start
+                                    existing.suite = suiteName
+                                    existing.name = testName
+                                }
+
+                                uniqueTests[testKey] = existing
                             }
+                        }
+                    }
 
-                            def isFlaky = false
+                    def suiteStats = [:]
 
-                            if (testCase.flaky == true) {
-                                isFlaky = true
-                            }
+                    int totalTests = 0
+                    int passedTests = 0
+                    int failedTests = 0
+                    int flakyTests = 0
 
-                            if (testCase.statusDetails?.flaky == true) {
-                                isFlaky = true
-                            }
+                    uniqueTests.values().each { test ->
+                        def suiteName = test.suite ?: 'Default Suite'
+                        def finalStatus = test.finalStatus ?: 'unknown'
+                        def executions = test.executions ?: []
 
-                            suiteStats[suiteName].total++
+                        if (!suiteStats.containsKey(suiteName)) {
+                            suiteStats[suiteName] = [
+                                total : 0,
+                                passed: 0,
+                                failed: 0,
+                                flaky : 0
+                            ]
+                        }
 
-                            if (status == 'passed') {
-                                suiteStats[suiteName].passed++
-                            } else if (status == 'failed' || status == 'broken') {
-                                suiteStats[suiteName].failed++
-                            }
+                        boolean hasRetry = executions.size() > 1
+                        boolean hasFailureBefore = executions.any { it == 'failed' || it == 'broken' }
+                        boolean isFinalPassed = finalStatus == 'passed'
+                        boolean isFinalFailed = finalStatus == 'failed' || finalStatus == 'broken'
 
-                            if (isFlaky) {
-                                suiteStats[suiteName].flaky++
-                                flakyTests++
-                            }
+                        totalTests++
+                        suiteStats[suiteName].total++
+
+                        if (isFinalPassed && hasRetry && hasFailureBefore) {
+                            flakyTests++
+                            suiteStats[suiteName].flaky++
+
+                        } else if (isFinalPassed) {
+                            passedTests++
+                            suiteStats[suiteName].passed++
+
+                        } else if (isFinalFailed) {
+                            failedTests++
+                            suiteStats[suiteName].failed++
                         }
                     }
 
@@ -269,6 +308,7 @@ pipeline {
                     }
 
                     def finalTags = params.TAGS?.trim()
+
                     if (!finalTags) {
                         finalTags = 'not @ignore'
                     } else {
@@ -363,7 +403,7 @@ pipeline {
 
                             <p>
                                 <b>Allure Report:</b>
-                                <a href="${env.BUILD_URL}allure">${env.BUILD_URL}allure/</a>
+                                <a href="${env.BUILD_URL}allure">${env.BUILD_URL}allure</a>
                             </p>
 
                             <p>Regards,<br/>Jenkins Automation Pipeline</p>
