@@ -1,5 +1,9 @@
 pipeline {
-    agent any
+    agent{
+        node {
+            label 'playwright'
+        }
+    }
 
     options {
         timestamps()
@@ -9,16 +13,25 @@ pipeline {
     }
 
     parameters {
+
+        string(
+            name: 'EMAIL_RECIPIENTS',
+            defaultValue: 'badrjraou23@gmail.com',
+            description: 'Email recipients separated by comma'
+        )
+
         choice(
             name: 'BROWSER',
             choices: ['chromium'],
             description: 'Browser used by Playwright'
         )
 
-        string(
-            name: 'CUCUMBER_TAGS',
-            defaultValue: '',
-            description: 'Optional Cucumber tag. Empty = run all scenarios except @ignore. Example: @ui, @api, @ws, @hybrid, @ui or @api'
+        choice(
+            name: 'TAGS',
+            choices: [
+                '@ui', '@hybrid'
+            ],
+            description: 'Cucumber tag. Example: @ui, @api, @ws, @hybrid, @ui or @api'
         )
 
         choice(
@@ -32,6 +45,8 @@ pipeline {
         ALLURE_RESULTS = 'target/allure-results'
         ALLURE_REPORT = 'allure-report'
         TEST_EXIT_CODE_FILE = 'test-exit-code.txt'
+        JOB_STATUS_MESSAGE = ''
+        EMAIL_REPORT_FILE = 'email-report.html'
     }
 
     stages {
@@ -83,14 +98,10 @@ pipeline {
         stage('Run Tests') {
             steps {
                 script {
-                    def userTags = params.CUCUMBER_TAGS?.trim()
+                    def userTags = params.TAGS?.trim()
                     def finalTags = ''
 
-                    if (userTags == null || userTags == '') {
-                        finalTags = 'not @ignore'
-                    } else {
-                        finalTags = "(${userTags}) and not @ignore"
-                    }
+                    finalTags = "(${userTags}) and not @ignore"
 
                     echo "Final Cucumber tags: ${finalTags}"
 
@@ -142,6 +153,232 @@ pipeline {
                 '''
             }
         }
+
+        stage('Build Email Report') {
+            steps {
+                script {
+                    def parser = new groovy.json.JsonSlurperClassic()
+
+                    def summaryPath = "${env.ALLURE_REPORT}/widgets/summary.json"
+
+                    if (!fileExists(summaryPath)) {
+                        writeFile file: "${env.EMAIL_REPORT_FILE}", text: """
+                        <html>
+                            <body>
+                                <h2>Test Execution Report</h2>
+                                <p>Allure summary file not found: ${summaryPath}</p>
+                                <p>Build URL: <a href="${env.BUILD_URL}">${env.BUILD_URL}</a></p>
+                            </body>
+                        </html>
+                        """
+                        return
+                    }
+
+                    def summary = parser.parseText(readFile(summaryPath))
+                    def statistic = summary.statistic ?: [:]
+                    def time = summary.time ?: [:]
+
+                    def totalTests = statistic.total ?: 0
+                    def passedTests = statistic.passed ?: 0
+                    def failedTests = (statistic.failed ?: 0) + (statistic.broken ?: 0)
+
+                    def startMillis = time.start ?: 0
+                    def stopMillis = time.stop ?: 0
+                    def durationMillis = time.duration ?: (stopMillis - startMillis)
+
+                    def dateFormat = new java.text.SimpleDateFormat("yyyy-MM-dd")
+                    def timeFormat = new java.text.SimpleDateFormat("HH:mm:ss")
+
+                    def executionDate = startMillis ? dateFormat.format(new Date(startMillis as long)) : "N/A"
+                    def startTime = startMillis ? timeFormat.format(new Date(startMillis as long)) : "N/A"
+                    def endTime = stopMillis ? timeFormat.format(new Date(stopMillis as long)) : "N/A"
+
+                    def durationSeconds = Math.round((durationMillis ?: 0) / 1000)
+                    def durationText = "${durationSeconds}s"
+
+                    def suiteStats = [:].withDefault {
+                        [
+                            total : 0,
+                            passed: 0,
+                            failed: 0,
+                            flaky: 0
+                        ]
+                    }
+
+                    int flakyTests = 0
+
+                    def testCaseFiles = sh(
+                        script: "find ${env.ALLURE_REPORT}/data/test-cases -name '*.json' 2>/dev/null || true",
+                        returnStdout: true
+                    ).trim()
+
+                    if (testCaseFiles) {
+                        testCaseFiles.split("\\n").each { filePath ->
+                            def testCase = parser.parseText(readFile(filePath))
+
+                            def labels = testCase.labels ?: []
+                            def suiteLabel = labels.find { it.name == 'suite' }?.value
+                            def featureLabel = labels.find { it.name == 'feature' }?.value
+
+                            def suiteName = suiteLabel ?: featureLabel ?: 'Default Suite'
+                            def status = testCase.status ?: 'unknown'
+
+                            def isFlaky = false
+
+                            if (testCase.flaky == true) {
+                                isFlaky = true
+                            }
+
+                            if (testCase.statusDetails?.flaky == true) {
+                                isFlaky = true
+                            }
+
+                            suiteStats[suiteName].total++
+
+                            if (status == 'passed') {
+                                suiteStats[suiteName].passed++
+                            } else if (status == 'failed' || status == 'broken') {
+                                suiteStats[suiteName].failed++
+                            }
+
+                            if (isFlaky) {
+                                suiteStats[suiteName].flaky++
+                                flakyTests++
+                            }
+                        }
+                    }
+
+                    def suitesRows = ""
+
+                    suiteStats.keySet().sort().each { suiteName ->
+                        def s = suiteStats[suiteName]
+
+                        suitesRows += """
+                            <tr>
+                                <td>${suiteName}</td>
+                                <td align="center">${s.total}</td>
+                                <td align="center" style="color:green;"><b>${s.passed}</b></td>
+                                <td align="center" style="color:red;"><b>${s.failed}</b></td>
+                                <td align="center" style="color:orange;"><b>${s.flaky}</b></td>
+                            </tr>
+                        """
+                    }
+
+                    if (!suitesRows?.trim()) {
+                        suitesRows = """
+                            <tr>
+                                <td colspan="5" align="center">No suite details found</td>
+                            </tr>
+                        """
+                    }
+
+                    def finalTags = params.TAGS?.trim()
+                    if (!finalTags) {
+                        finalTags = 'not @ignore'
+                    } else {
+                        finalTags = "(${finalTags}) and not @ignore"
+                    }
+
+                    def htmlBody = """
+                    <html>
+                        <body style="font-family: Arial, sans-serif; color: #333;">
+                            <h2>Jenkins Test Execution Report</h2>
+
+                            <p>Hello,</p>
+
+                            <p>
+                                The automated test execution has been completed.
+                                Please find below the execution summary.
+                            </p>
+
+                            <h3>Execution Information</h3>
+
+                            <table border="1" cellspacing="0" cellpadding="8" style="border-collapse: collapse;">
+                                <tr>
+                                    <td><b>Project</b></td>
+                                    <td>${env.JOB_NAME}</td>
+                                </tr>
+                                <tr>
+                                    <td><b>Build Number</b></td>
+                                    <td>#${env.BUILD_NUMBER}</td>
+                                </tr>
+                                <tr>
+                                    <td><b>Date</b></td>
+                                    <td>${executionDate}</td>
+                                </tr>
+                                <tr>
+                                    <td><b>Start Time</b></td>
+                                    <td>${startTime}</td>
+                                </tr>
+                                <tr>
+                                    <td><b>End Time</b></td>
+                                    <td>${endTime}</td>
+                                </tr>
+                                <tr>
+                                    <td><b>Execution Time</b></td>
+                                    <td>${durationText}</td>
+                                </tr>
+                                <tr>
+                                    <td><b>Browser</b></td>
+                                    <td>${params.BROWSER}</td>
+                                </tr>
+                                <tr>
+                                    <td><b>Cucumber Tags</b></td>
+                                    <td>${finalTags}</td>
+                                </tr>
+                            </table>
+
+                            <h3>Global Test Summary</h3>
+
+                            <table border="1" cellspacing="0" cellpadding="8" style="border-collapse: collapse;">
+                                <tr style="background-color:#f2f2f2;">
+                                    <th>Total Tests</th>
+                                    <th>Passed</th>
+                                    <th>Failed</th>
+                                    <th>Flaky</th>
+                                </tr>
+                                <tr>
+                                    <td align="center"><b>${totalTests}</b></td>
+                                    <td align="center" style="color:green;"><b>${passedTests}</b></td>
+                                    <td align="center" style="color:red;"><b>${failedTests}</b></td>
+                                    <td align="center" style="color:orange;"><b>${flakyTests}</b></td>
+                                </tr>
+                            </table>
+
+                            <h3>Suites Summary</h3>
+
+                            <table border="1" cellspacing="0" cellpadding="8" style="border-collapse: collapse;">
+                                <tr style="background-color:#f2f2f2;">
+                                    <th>Suite</th>
+                                    <th>Total</th>
+                                    <th>Passed</th>
+                                    <th>Failed</th>
+                                    <th>Flaky</th>
+                                </tr>
+                                ${suitesRows}
+                            </table>
+
+                            <h3>Links</h3>
+
+                            <p>
+                                <b>Build URL:</b>
+                                <a href="${env.BUILD_URL}">${env.BUILD_URL}</a>
+                            </p>
+
+                            <p>
+                                <b>Allure Report:</b>
+                                <a href="${env.BUILD_URL}allure">${env.BUILD_URL}allure/</a>
+                            </p>
+
+                            <p>Regards,<br/>Jenkins Automation Pipeline</p>
+                        </body>
+                    </html>
+                    """
+
+                    writeFile file: "${env.EMAIL_REPORT_FILE}", text: htmlBody
+                }
+            }
+        }
     }
 
     post {
@@ -164,7 +401,8 @@ pipeline {
                         target/logs/**,
                         target/videos/**,
                         target/screenshots/**,
-                        test-exit-code.txt
+                        test-exit-code.txt,
+                        email-report.html
                     ''', allowEmptyArchive: true
                 }
 
@@ -176,6 +414,17 @@ pipeline {
                         reportBuildPolicy: 'ALWAYS',
                         results: [[path: 'target/allure-results']]
                     ])
+                }
+
+                catchError(buildResult: 'SUCCESS', stageResult: 'SUCCESS') {
+                    emailext(
+                        subject: "Test Execution Report - ${env.JOB_NAME} #${env.BUILD_NUMBER}",
+                        body: fileExists("${env.EMAIL_REPORT_FILE}")
+                            ? readFile("${env.EMAIL_REPORT_FILE}")
+                            : "Test execution completed. Build URL: ${env.BUILD_URL}",
+                        mimeType: 'text/html',
+                        to: "${params.EMAIL_RECIPIENTS}"
+                    )
                 }
 
                 currentBuild.result = 'SUCCESS'
