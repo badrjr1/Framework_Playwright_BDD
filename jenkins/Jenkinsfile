@@ -150,7 +150,11 @@ pipeline {
                 echo 'Publishing reports and archiving artifacts...'
 
                 catchError(buildResult: 'SUCCESS', stageResult: 'SUCCESS') {
-                    junit allowEmptyResults: true, testResults: 'target/surefire-reports/*.xml'
+                    junit(
+                        allowEmptyResults: true,
+                        skipMarkingBuildUnstable: true,
+                        testResults: 'target/surefire-reports/*.xml'
+                    )
                 }
 
                 catchError(buildResult: 'SUCCESS', stageResult: 'SUCCESS') {
