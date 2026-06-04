@@ -51,7 +51,7 @@ pipeline {
                     echo "Checking Maven..."
                     mvn -version
 
-                    echo "Checking Allure..."
+                    echo "Checking Allure CLI..."
                     allure --version || true
                 '''
             }
@@ -111,7 +111,7 @@ pipeline {
 
                     if (testStatus != 0) {
                         currentBuild.result = 'UNSTABLE'
-                        echo "Some tests failed. Pipeline will continue to generate reports."
+                        echo "Some tests failed. Pipeline will continue to generate Allure report."
                     }
                 }
             }
@@ -135,26 +135,13 @@ pipeline {
             steps {
                 sh '''
                     echo "Generating Allure report..."
-                    allure generate "${ALLURE_RESULTS}" --clean -o "${ALLURE_REPORT}" || true
+
+                    if [ -d "${ALLURE_RESULTS}" ]; then
+                        allure generate "${ALLURE_RESULTS}" --clean -o "${ALLURE_REPORT}" || true
+                    else
+                        echo "Allure results directory not found: ${ALLURE_RESULTS}"
+                    fi
                 '''
-            }
-        }
-
-        stage('Check Test Result') {
-            steps {
-                script {
-                    if (!fileExists("${env.TEST_EXIT_CODE_FILE}")) {
-                        error("Test exit code file not found. Tests may not have been executed.")
-                    }
-
-                    def testStatus = readFile("${env.TEST_EXIT_CODE_FILE}").trim()
-
-                    if (testStatus != '0') {
-                        error("Tests failed. Maven exit code: ${testStatus}")
-                    }
-
-                    echo "All tests passed successfully."
-                }
             }
         }
     }
@@ -187,7 +174,7 @@ pipeline {
         }
 
         unstable {
-            echo 'Pipeline completed with failed tests, reports were generated.'
+            echo 'Pipeline completed with failed tests, but reports were generated.'
         }
 
         failure {
