@@ -153,7 +153,7 @@ pipeline {
         stage('Build Email Report') {
             steps {
                 script {
-                    def summary = readJSON file: summaryPath
+                    def summaryPath = "${env.ALLURE_REPORT}/widgets/summary.json"
 
                     if (!fileExists(summaryPath)) {
                         writeFile file: "${env.EMAIL_REPORT_FILE}", text: """
@@ -168,7 +168,7 @@ pipeline {
                         return
                     }
 
-                    def summary = parser.parseText(readFile(summaryPath))
+                    def summary = readJSON file: summaryPath
                     def statistic = summary.statistic ?: [:]
                     def time = summary.time ?: [:]
 
