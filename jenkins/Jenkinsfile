@@ -153,9 +153,7 @@ pipeline {
         stage('Build Email Report') {
             steps {
                 script {
-                    def parser = new groovy.json.JsonSlurperClassic()
-
-                    def summaryPath = "${env.ALLURE_REPORT}/widgets/summary.json"
+                    def summary = readJSON file: summaryPath
 
                     if (!fileExists(summaryPath)) {
                         writeFile file: "${env.EMAIL_REPORT_FILE}", text: """
@@ -210,7 +208,7 @@ pipeline {
 
                     if (testCaseFiles) {
                         testCaseFiles.split("\\n").each { filePath ->
-                            def testCase = parser.parseText(readFile(filePath))
+                            def testCase = readJSON file: filePath
 
                             def labels = testCase.labels ?: []
                             def suiteLabel = labels.find { it.name == 'suite' }?.value
