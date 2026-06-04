@@ -1,18 +1,11 @@
 pipeline {
     agent any
 
-    options {
-        timestamps()
-        buildDiscarder(logRotator(numToKeepStr: '10'))
-        disableConcurrentBuilds()
-        timeout(time: 60, unit: 'MINUTES')
-    }
-
     parameters {
 
         string(
             name: 'EMAIL_RECIPIENTS',
-            defaultValue: 'badrjraou23@gmail.com',
+            defaultValue: '',
             description: 'Email recipients separated by comma'
         )
 
@@ -35,6 +28,13 @@ pipeline {
             choices: ['INFO', 'DEBUG', 'WARN', 'ERROR'],
             description: 'Framework log level'
         )
+    }
+
+    options {
+            timestamps()
+            buildDiscarder(logRotator(numToKeepStr: '10'))
+            disableConcurrentBuilds()
+            timeout(time: 60, unit: 'MINUTES')
     }
 
     environment {
