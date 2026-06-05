@@ -283,6 +283,10 @@ pipeline {
                         }
                     }
 
+                    def passedPercent = totalTests > 0 ? ((passedTests * 100).intdiv(totalTests)) : 0
+                    def failedPercent = totalTests > 0 ? ((failedTests * 100).intdiv(totalTests)) : 0
+                    def flakyPercent  = totalTests > 0 ? ((flakyTests  * 100).intdiv(totalTests)) : 0
+
                     def suitesRows = ""
 
                     suiteStats.keySet().sort().each { suiteName ->
@@ -375,9 +379,18 @@ pipeline {
                                 </tr>
                                 <tr>
                                     <td align="center"><b>${totalTests}</b></td>
-                                    <td align="center" style="color:green;"><b>${passedTests}</b></td>
-                                    <td align="center" style="color:red;"><b>${failedTests}</b></td>
-                                    <td align="center" style="color:orange;"><b>${flakyTests}</b></td>
+                                    <td align="center" style="color:green;">
+                                        <b>${passedTests}</b><br/>
+                                        <span style="font-size:12px;">${passedPercent}%</span>
+                                    </td>
+                                    <td align="center" style="color:red;">
+                                        <b>${failedTests}</b><br/>
+                                        <span style="font-size:12px;">${failedPercent}%</span>
+                                    </td>
+                                    <td align="center" style="color:orange;">
+                                        <b>${flakyTests}</b><br/>
+                                        <span style="font-size:12px;">${flakyPercent}%</span>
+                                    </td>
                                 </tr>
                             </table>
 
