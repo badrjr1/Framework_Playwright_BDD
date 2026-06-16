@@ -154,6 +154,7 @@ pipeline {
                     junit(
                         allowEmptyResults: true,
                         skipMarkingBuildUnstable: true,
+                        skipPublishingChecks: true,
                         testResults: 'target/surefire-reports/*.xml'
                     )
                 }
@@ -165,8 +166,7 @@ pipeline {
                         target/logs/**,
                         target/videos/**,
                         target/screenshots/**,
-                        test-exit-code.txt,
-                        email-report.html
+                        test-exit-code.txt
                     ''', allowEmptyArchive: true
                 }
 
