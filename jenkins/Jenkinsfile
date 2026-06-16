@@ -151,15 +151,6 @@ pipeline {
                 echo 'Publishing reports and archiving artifacts...'
 
                 catchError(buildResult: 'SUCCESS', stageResult: 'SUCCESS') {
-                    junit(
-                        allowEmptyResults: true,
-                        skipMarkingBuildUnstable: true,
-                        skipPublishingChecks: true,
-                        testResults: 'target/surefire-reports/*.xml'
-                    )
-                }
-
-                catchError(buildResult: 'SUCCESS', stageResult: 'SUCCESS') {
                     archiveArtifacts artifacts: '''
                         target/allure-results/**,
                         allure-report/**,
