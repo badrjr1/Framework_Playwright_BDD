@@ -115,64 +115,8 @@ public class Hooks {
             }
 
         } catch (Exception e) {
-            e.printStackTrace();
             logger.error("Page initialization failed for scenario: {}", scenario.getName(), e);
             throw new RuntimeException("Failed to initialize Playwright via Healenium: " + e.getMessage());
-        }
-    }
-
-    @BeforeStep
-    public void logScenarioStart(Scenario scenario) {
-        logger.info("Starting step execution for scenario: {}", scenario.getName());
-    }
-
-    @AfterStep
-    public void handleFailure(Scenario scenario) {
-
-        if (!scenario.isFailed()) {
-            return;
-        }
-
-        if (!Boolean.parseBoolean(ConfigReader.get("screenshot.on.failure"))) {
-            logger.info("Screenshot on failure is disabled");
-            return;
-        }
-
-        logger.error("Step failed in scenario: {}", scenario.getName());
-
-        Page page = pageThread.get();
-
-        if (page == null) {
-            scenario.log("Screenshot not captured because page is null");
-            logger.warn("Screenshot not captured because page is null for scenario: {}", scenario.getName());
-            return;
-        }
-
-        try {
-            logger.info("Capturing screenshot for failed scenario: {}", scenario.getName());
-
-            byte[] screenshot = page.screenshot(
-                    new Page.ScreenshotOptions()
-                            .setFullPage(Boolean.parseBoolean(ConfigReader.get("screenshot.full.page")))
-            );
-
-            Allure.addAttachment(
-                    "FAILED_SCREENSHOT_" + scenario.getName(),
-                    "image/png",
-                    new ByteArrayInputStream(screenshot),
-                    ".png"
-            );
-
-            logger.info("Screenshot attached to Allure report for scenario: {}", scenario.getName());
-
-            String currentUrl = page.url();
-
-            scenario.log("Failed at URL: " + currentUrl);
-            logger.info("Failed at URL: {}", currentUrl);
-
-        } catch (Exception e) {
-            scenario.log("Unable to capture failed screenshot: " + e.getMessage());
-            logger.error("Unable to capture failed screenshot for scenario: {}", scenario.getName(), e);
         }
     }
 
@@ -191,6 +135,7 @@ public class Hooks {
         logger.info("Starting teardown for scenario: {}", scenarioName);
         logger.info("Scenario final status: {}", status);
 
+        attachFailureScreenshot(scenario);
         attachLogFileToAllure();
 
         Path videoPath = null;
@@ -324,6 +269,47 @@ public class Hooks {
 
         } catch (Exception e) {
             logger.warn("Unable to attach framework log file to Allure: {}", e.getMessage());
+        }
+    }
+
+    private void attachFailureScreenshot(Scenario scenario) {
+
+        if (!scenario.isFailed()) {
+            return;
+        }
+
+        if (!Boolean.parseBoolean(ConfigReader.get("screenshot.on.failure"))) {
+            logger.info("Screenshot on failure is disabled");
+            return;
+        }
+
+        Page page = pageThread.get();
+
+        if (page == null) {
+            scenario.log("Screenshot not captured because page is null");
+            logger.warn("Screenshot not captured because page is null for scenario: {}", scenario.getName());
+            return;
+        }
+
+        try {
+            byte[] screenshot = page.screenshot(
+                    new Page.ScreenshotOptions()
+                            .setFullPage(Boolean.parseBoolean(ConfigReader.get("screenshot.full.page")))
+            );
+
+            Allure.addAttachment(
+                    "FAILED_SCREENSHOT_" + sanitizeFileName(scenario.getName()),
+                    "image/png",
+                    new ByteArrayInputStream(screenshot),
+                    ".png"
+            );
+
+            scenario.log("Failed at URL: " + page.url());
+            logger.info("Failure screenshot attached for scenario: {}", scenario.getName());
+
+        } catch (Exception e) {
+            scenario.log("Unable to capture failed screenshot: " + e.getMessage());
+            logger.error("Unable to capture failed screenshot for scenario: {}", scenario.getName(), e);
         }
     }
 }
