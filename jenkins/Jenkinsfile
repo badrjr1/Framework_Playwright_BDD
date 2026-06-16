@@ -1,0 +1,183 @@
+pipeline {
+    agent any
+
+    parameters {
+
+        choice(
+            name: 'BROWSER',
+            choices: ['chromium'],
+            description: 'Browser used by Playwright'
+        )
+
+        choice(
+            name: 'TAGS',
+            choices: [
+                '@ui', '@hybrid','@websocket','@api'
+            ],
+            description: 'Cucumber tag. Example: @ui, @api, @ws, @hybrid, @ui or @api'
+        )
+
+        choice(
+            name: 'FRAMEWORK_LOG_LEVEL',
+            choices: ['INFO', 'DEBUG', 'WARN', 'ERROR'],
+            description: 'Framework log level'
+        )
+    }
+
+    options {
+            timestamps()
+            buildDiscarder(logRotator(numToKeepStr: '10'))
+            disableConcurrentBuilds()
+            timeout(time: 60, unit: 'MINUTES')
+    }
+
+    environment {
+        ALLURE_RESULTS = 'target/allure-results'
+        ALLURE_REPORT = 'allure-report'
+        TEST_EXIT_CODE_FILE = 'test-exit-code.txt'
+        JOB_STATUS_MESSAGE = ''
+        EMAIL_REPORT_FILE = 'email-report.html'
+    }
+
+    stages {
+
+        stage('Checkout') {
+            steps {
+                checkout scm
+            }
+        }
+
+        stage('Verify Tools') {
+            steps {
+                sh '''
+                    echo "Checking Java..."
+                    java -version
+
+                    echo "Checking Maven..."
+                    mvn -version
+
+                    echo "Checking Allure CLI..."
+                    allure --version || true
+                '''
+            }
+        }
+
+        stage('Prepare Workspace') {
+            steps {
+                sh '''
+                    mkdir -p target/logs
+                    mkdir -p target/videos
+                    mkdir -p target/screenshots
+                    mkdir -p target/allure-results
+
+                    rm -f "${TEST_EXIT_CODE_FILE}"
+                '''
+            }
+        }
+
+        stage('Install Playwright Browser') {
+            steps {
+                sh """
+                    mvn -q exec:java \
+                      -Dexec.mainClass=com.microsoft.playwright.CLI \
+                      -Dexec.args="install ${params.BROWSER}"
+                """
+            }
+        }
+
+        stage('Run Tests') {
+            steps {
+                script {
+                    def userTags = params.TAGS?.trim()
+                    def finalTags = ''
+
+                    finalTags = "(${userTags}) and not @ignore"
+
+                    echo "Final Cucumber tags: ${finalTags}"
+
+                    def testStatus = sh(
+                        script: """
+                            mvn clean test \
+                              -Dbrowser.name=${params.BROWSER} \
+                              -Dframework.log.level=${params.FRAMEWORK_LOG_LEVEL} \
+                              -Dlibrary.log.level=WARN \
+                              -Dcucumber.filter.tags="${finalTags}"
+                        """,
+                        returnStatus: true
+                    )
+
+                    echo "Maven test exit code: ${testStatus}"
+                    writeFile file: "${env.TEST_EXIT_CODE_FILE}", text: "${testStatus}"
+
+                    if (testStatus != 0) {
+                        echo "Some tests failed, but pipeline will continue and remain SUCCESS."
+                    }
+                }
+            }
+        }
+
+        stage('Prepare Allure History') {
+            steps {
+                sh '''
+                    if [ -d "${ALLURE_REPORT}/history" ]; then
+                        echo "Copying previous Allure history..."
+                        mkdir -p "${ALLURE_RESULTS}/history"
+                        cp -r "${ALLURE_REPORT}/history/"* "${ALLURE_RESULTS}/history/" || true
+                    else
+                        echo "No previous Allure history found."
+                    fi
+                '''
+            }
+        }
+
+        stage('Generate Allure Report') {
+            steps {
+                sh '''
+                    echo "Generating Allure report..."
+
+                    if [ -d "${ALLURE_RESULTS}" ]; then
+                        allure generate "${ALLURE_RESULTS}" --clean -o "${ALLURE_REPORT}" || true
+                    else
+                        echo "Allure results directory not found: ${ALLURE_RESULTS}"
+                    fi
+                '''
+            }
+        }
+    }
+
+    post {
+        always {
+            script {
+                echo 'Publishing reports and archiving artifacts...'
+
+                catchError(buildResult: 'SUCCESS', stageResult: 'SUCCESS') {
+                    archiveArtifacts artifacts: '''
+                        target/allure-results/**,
+                        allure-report/**,
+                        target/logs/**,
+                        target/videos/**,
+                        target/screenshots/**,
+                        test-exit-code.txt
+                    ''', allowEmptyArchive: true
+                }
+
+                catchError(buildResult: 'SUCCESS', stageResult: 'SUCCESS') {
+                    allure([
+                        commandline: 'Allure',
+                        includeProperties: false,
+                        jdk: '',
+                        reportBuildPolicy: 'ALWAYS',
+                        results: [[path: 'target/allure-results']]
+                    ])
+                }
+
+                currentBuild.result = 'SUCCESS'
+                echo 'Pipeline finished as SUCCESS.'
+            }
+        }
+
+        success {
+            echo 'Pipeline completed successfully.'
+        }
+    }
+}

@@ -1,0 +1,120 @@
+# =========================
+# Maven / Java
+# =========================
+target/
+*.class
+*.jar
+*.war
+*.ear
+
+# Maven wrapper cache
+.mvn/wrapper/maven-wrapper.jar
+
+# =========================
+# IntelliJ IDEA
+# =========================
+.idea/
+*.iml
+*.iws
+*.ipr
+out/
+
+# =========================
+# VS Code
+# =========================
+.vscode/
+
+# =========================
+# Allure Reports
+# =========================
+.allure/
+allure-results/
+allure-report/
+
+# =========================
+# Logs
+# =========================
+logs/
+*.log
+
+# =========================
+# Playwright
+# =========================
+playwright-report/
+test-results/
+videos/
+screenshots/
+traces/
+trace.zip
+
+# =========================
+# Cucumber Reports
+# =========================
+cucumber-reports/
+target/cucumber-reports/
+
+# =========================
+# Environment / Secrets
+# =========================
+.env
+.env.*
+*.key
+*.pem
+*.p12
+*.jks
+
+# =========================
+# Properties sensibles
+# =========================
+application-local.properties
+application-dev.properties
+secrets.properties
+
+# =========================
+# OS files
+# =========================
+.DS_Store
+Thumbs.db
+
+# =========================
+# Temporary files
+# =========================
+*.tmp
+*.temp
+*.bak
+*.swp
+
+
+!.mvn/wrapper/maven-wrapper.jar
+!**/src/main/**/target/
+!**/src/test/**/target/
+.kotlin
+
+### IntelliJ IDEA ###
+.idea/modules.xml
+.idea/jarRepositories.xml
+.idea/compiler.xml
+.idea/libraries/
+
+
+### Eclipse ###
+.apt_generated
+.classpath
+.factorypath
+.project
+.settings
+.springBeans
+.sts4-cache
+
+### NetBeans ###
+/nbproject/private/
+/nbbuild/
+/dist/
+/nbdist/
+/.nb-gradle/
+build/
+!**/src/main/**/build/
+!**/src/test/**/build/
+
+
+

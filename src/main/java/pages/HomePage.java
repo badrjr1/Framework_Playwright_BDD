@@ -1,0 +1,20 @@
+package pages;
+
+import com.microsoft.playwright.Page;
+import core.actions.ui.ElementActions;
+import core.actions.ui.IElementActions;
+
+public class HomePage {
+
+    private final IElementActions elementActions;
+
+    public HomePage(Page page) {
+
+        this.elementActions = new ElementActions(page);
+    }
+
+    public void click_btn_my_account() {
+        elementActions.click("btn_my_account");
+    }
+
+}
