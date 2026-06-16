@@ -287,6 +287,9 @@ pipeline {
                     def failedPercent = totalTests > 0 ? ((failedTests * 100).intdiv(totalTests)) : 0
                     def flakyPercent  = totalTests > 0 ? ((flakyTests  * 100).intdiv(totalTests)) : 0
 
+                    def passEnd = passedPercent
+                    def failEnd = passedPercent + failedPercent
+
                     def suitesRows = ""
 
                     suiteStats.keySet().sort().each { suiteName ->
@@ -319,6 +322,54 @@ pipeline {
                         finalTags = "(${finalTags}) and not @ignore"
                     }
 
+                    def allureChartHtml = """
+                    <h3>Allure Execution Overview</h3>
+
+                    <table cellspacing="0" cellpadding="0" style="margin-bottom:20px;">
+                        <tr>
+                            <td style="padding-right:40px; text-align:center;">
+                                <div style="font-size:42px; font-weight:bold; color:#000;">
+                                    ${totalTests}
+                                </div>
+                                <div style="font-size:14px; color:#777;">
+                                    test cases
+                                </div>
+                            </td>
+
+                            <td>
+                                <div style="
+                                    width:160px;
+                                    height:160px;
+                                    border-radius:50%;
+                                    background:conic-gradient(
+                                        #97cc64 0% ${passEnd}%,
+                                        #ff5a44 ${passEnd}% ${failEnd}%,
+                                        #ffd666 ${failEnd}% 100%
+                                    );
+                                    position:relative;
+                                ">
+                                    <div style="
+                                        position:absolute;
+                                        width:105px;
+                                        height:105px;
+                                        border-radius:50%;
+                                        background:#ffffff;
+                                        top:27px;
+                                        left:27px;
+                                        text-align:center;
+                                        line-height:105px;
+                                        font-size:30px;
+                                        font-weight:bold;
+                                        color:#000;
+                                    ">
+                                        ${passedPercent}%
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                    </table>
+                    """
+
                     def htmlBody = """
                     <html>
                         <body style="font-family: Arial, sans-serif; color: #333;">
@@ -330,6 +381,8 @@ pipeline {
                                 The automated test execution has been completed.
                                 Please find below the execution summary.
                             </p>
+
+                            ${allureChartHtml}
 
                             <h3>Execution Information</h3>
 
