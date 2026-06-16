@@ -12,7 +12,7 @@ pipeline {
         choice(
             name: 'TAGS',
             choices: [
-                '@ui', '@hybrid'
+                '@ui', '@hybrid','@websocket','@api'
             ],
             description: 'Cucumber tag. Example: @ui, @api, @ws, @hybrid, @ui or @api'
         )
