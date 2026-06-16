@@ -12,11 +12,7 @@ public class JobSteps extends BaseSteps {
     }
 
     @When("run (.+) (.+) with parameters (.+)$")
-    public void run_job_with_parameters(
-            String jobType,
-            String jobName,
-            String parameters
-    ) {
+    public void run_job_with_parameters(String jobType, String jobName, String parameters ) {
         jobActions().runJobWithParameters(jobType, jobName, parameters);
     }
 
@@ -24,4 +20,5 @@ public class JobSteps extends BaseSteps {
     public void its_exit_code_is() {
         jobActions().assertExitCodeEquals();
     }
+
 }
