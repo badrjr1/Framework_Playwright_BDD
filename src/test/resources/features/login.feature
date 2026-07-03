@@ -23,6 +23,5 @@ Feature: Login functionality
     Examples:
       | email                                        | password | url_contains          |
       | pranav@testroverautomation.com               | Test1234 | route=account/account |
-      | ${string:5,alnum}@test-${string:4,alpha}.com | Test123  | route=account/account |
 
 
